@@ -5,7 +5,8 @@ import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon } from './icons';
 
 interface WorkItemRowProps {
   item: WorkItem;
-  serialNumber: number;
+  isSelected: boolean;
+  onToggleSelection: (id: string) => void;
   onEdit: () => void;
   onDelete: () => void;
   onArchive: () => void;
@@ -44,7 +45,7 @@ const getWorkTypeColorClass = (workType: string): string => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, serialNumber, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -72,8 +73,19 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, serialNumber, onEdit, o
   };
 
   return (
-    <tr className={`even:bg-slate-50/50 dark:even:bg-slate-800/50 hover:bg-indigo-50/20 dark:hover:bg-slate-800 transition-colors duration-150 border-l-4 ${colorClass}`}>
-      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-center font-medium text-slate-600 dark:text-slate-400 sm:pl-6">{serialNumber}</td>
+    <tr 
+        data-item-id={item.id}
+        className={`${isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'} hover:bg-indigo-50/20 dark:hover:bg-slate-800 transition-colors duration-150 border-l-4 ${colorClass}`}
+    >
+      <td className="relative px-7 sm:w-12 sm:px-6">
+        <input
+            type="checkbox"
+            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
+            checked={isSelected}
+            onChange={() => onToggleSelection(item.id!)}
+            aria-label={`Select item ${item.customerName}`}
+        />
+      </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">{formatDate(item.dateOfWork)}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workBy}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workOfType}</td>
@@ -138,9 +150,14 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, serialNumber, onEdit, o
                 )}
               </>
             ) : (
-                <button onClick={onUnarchive} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
-                    <UnarchiveIcon className="h-4 w-4" />
-                </button>
+                <>
+                    <button onClick={onUnarchive} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
+                        <UnarchiveIcon className="h-4 w-4" />
+                    </button>
+                    <button onClick={onDelete} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                        <DeleteIcon className="h-4 w-4" />
+                    </button>
+                </>
             )}
         </div>
       </td>

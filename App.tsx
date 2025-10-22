@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
 import ThemeToggle from './components/ThemeToggle';
-import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
+import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon, PrintIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
+import BulkActionToolbar from './components/BulkActionToolbar';
+import BulkEditModal from './components/BulkEditModal';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -17,6 +19,7 @@ const App: React.FC = () => {
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<WorkItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -27,6 +30,9 @@ const App: React.FC = () => {
   const [workTypeOptions, setWorkTypeOptions] = useState<string[]>(staticWorkTypeOptions);
   const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
   const [workByOptions, setWorkByOptions] = useState<string[]>(INITIAL_WORK_BY_OPTIONS);
+
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
@@ -65,7 +71,6 @@ const App: React.FC = () => {
       const items: WorkItem[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        // Ensure all required fields have a default value to prevent crashes from undefined properties
         items.push({
           id: doc.id,
           dateOfWork: data.dateOfWork || '',
@@ -151,10 +156,22 @@ const App: React.FC = () => {
         return sortDirection === 'asc' ? comparison : -comparison;
       });
     }
+    
+    // Deselect items that are no longer visible
+    const visibleIds = new Set(items.map(item => item.id));
+    setSelectedItems(prev => prev.filter(id => visibleIds.has(id)));
 
     setFilteredItems(items);
   }, [searchTerm, activeTab, workItems, sortColumn, sortDirection]);
 
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+        const allVisibleSelected = filteredItems.length > 0 && selectedItems.length === filteredItems.length;
+        const someVisibleSelected = selectedItems.length > 0 && selectedItems.length < filteredItems.length;
+        headerCheckboxRef.current.checked = allVisibleSelected;
+        headerCheckboxRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [selectedItems, filteredItems]);
 
   const handleOpenModal = (item: WorkItem | null = null) => {
     setCurrentItem(item);
@@ -310,6 +327,76 @@ const App: React.FC = () => {
     }
   };
   
+  const handleToggleItemSelection = (id: string) => {
+      setSelectedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleToggleAllSelection = () => {
+      const allVisibleIds = filteredItems.map(item => item.id!);
+      if (selectedItems.length === allVisibleIds.length) {
+          setSelectedItems([]);
+      } else {
+          setSelectedItems(allVisibleIds);
+      }
+  };
+  
+  const handleBulkDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete these ${selectedItems.length} items? This action cannot be undone.`)) {
+      try {
+        const batch = db.batch();
+        selectedItems.forEach(id => {
+          batch.delete(db.collection("work-items").doc(id));
+        });
+        await batch.commit();
+        setSelectedItems([]);
+      } catch (error) {
+        console.error("Error performing bulk delete: ", error);
+        alert("An error occurred during bulk delete. Check the console for details.");
+      }
+    }
+  };
+
+  const handleBulkPrint = () => {
+    const selectedIdsSet = new Set(selectedItems);
+    document.querySelectorAll('tbody tr[data-item-id]').forEach(row => {
+      const rowId = row.getAttribute('data-item-id');
+      if (rowId && selectedIdsSet.has(rowId)) {
+        row.classList.add('print-selected');
+      }
+    });
+
+    const cleanup = () => {
+      document.querySelectorAll('.print-selected').forEach(row => {
+        row.classList.remove('print-selected');
+      });
+      window.removeEventListener('afterprint', cleanup);
+    };
+
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+  };
+  
+  const handleBulkUpdate = async (data: { status?: string, workBy?: string }) => {
+    if (Object.keys(data).length === 0) {
+        setIsBulkEditModalOpen(false);
+        return;
+    };
+    try {
+        const batch = db.batch();
+        selectedItems.forEach(id => {
+            const docRef = db.collection("work-items").doc(id);
+            batch.update(docRef, data);
+        });
+        await batch.commit();
+        setSelectedItems([]);
+        setIsBulkEditModalOpen(false);
+    } catch (error) {
+        console.error("Error during bulk update: ", error);
+        alert("An error occurred during bulk update. Check the console for details.");
+    }
+};
+
+  
   const getTabCount = (tab: string): number => {
     if (tab === 'All Items') return workItems.filter(item => !item.isArchived).length;
     if (tab === 'Archived') return workItems.filter(item => item.isArchived).length;
@@ -344,42 +431,57 @@ const App: React.FC = () => {
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="mb-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Search Box */}
-                <div className="relative w-full sm:w-auto">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search tasks..."
-                      className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                
-                {/* Header */}
-                <div className="text-center order-first sm:order-none">
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Work Management Dashboard</h1>
-                  <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
-                </div>
+        {selectedItems.length > 0 ? (
+          <BulkActionToolbar
+            selectedCount={selectedItems.length}
+            onClearSelection={() => setSelectedItems([])}
+            onPrint={handleBulkPrint}
+            onEdit={() => setIsBulkEditModalOpen(true)}
+            onDelete={handleBulkDelete}
+          />
+        ) : (
+          <div className="mb-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="relative w-full sm:w-auto">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                          <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search tasks..."
+                        className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                      />
+                  </div>
+                  
+                  <div className="text-center order-first sm:order-none">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Work Management Dashboard</h1>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={handleOpenImportModal}
-                    className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-                  >
-                    <ImportIcon className="-ml-0.5 h-5 w-5" />
-                    Import
-                  </button>
-                  <ThemeToggle theme={theme} setTheme={setTheme} />
-                </div>
-            </div>
-        </div>
+                  <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleOpenImportModal}
+                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    >
+                      <ImportIcon className="-ml-0.5 h-5 w-5" />
+                      Import
+                    </button>
+                     <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    >
+                      <PrintIcon className="-ml-0.5 h-5 w-5" />
+                      Print
+                    </button>
+                    <ThemeToggle theme={theme} setTheme={setTheme} />
+                  </div>
+              </div>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
             <div className="border-b border-slate-200 dark:border-slate-800">
@@ -387,7 +489,10 @@ const App: React.FC = () => {
                     {TABS.map(tab => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                setSelectedItems([]);
+                            }}
                             className={`${
                                 activeTab === tab
                                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
@@ -406,7 +511,14 @@ const App: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 sm:pl-6">SN</th>
+                    <th scope="col" className="relative px-7 sm:w-12 sm:px-6">
+                        <input
+                            type="checkbox"
+                            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
+                            ref={headerCheckboxRef}
+                            onChange={handleToggleAllSelection}
+                        />
+                    </th>
                     <SortableHeader column="dateOfWork" title="Date" className="px-3" />
                     <SortableHeader column="workBy" title="Work By" className="px-3" />
                     <SortableHeader column="workOfType" title="Work Type" className="px-3" />
@@ -420,11 +532,12 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {filteredItems.map((item, index) => (
+                  {filteredItems.map((item) => (
                     <WorkItemRow
                       key={item.id}
                       item={item}
-                      serialNumber={index + 1}
+                      isSelected={selectedItems.includes(item.id!)}
+                      onToggleSelection={handleToggleItemSelection}
                       onEdit={() => handleOpenModal(item)}
                       onDelete={() => handleDelete(item.id!)}
                       onArchive={() => handleArchive(item.id!)}
@@ -456,6 +569,16 @@ const App: React.FC = () => {
             workTypeOptions={workTypeOptions}
             statusOptions={statusOptions}
           />
+        )}
+        
+        {isBulkEditModalOpen && (
+            <BulkEditModal
+                onClose={() => setIsBulkEditModalOpen(false)}
+                onSave={handleBulkUpdate}
+                workByOptions={workByOptions}
+                statusOptions={statusOptions}
+                selectedCount={selectedItems.length}
+            />
         )}
 
         {isImportModalOpen && (

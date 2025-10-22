@@ -39,6 +39,75 @@
         }
       }
     </script>
+    <style>
+      @media print {
+        body {
+          background-color: #fff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        /* Selectors to hide non-printable elements */
+        .container > div:first-child, /* Hides the header block */
+        nav, /* Hides the tabs */
+        button[aria-label="Add new work item"], /* Hides the FAB */
+        div[role="dialog"], /* Hides modals */
+        table th:last-child, /* Hides the 'Actions' column header */
+        table td:last-child { /* Hides the actions column in each row */
+          display: none !important;
+        }
+
+        .container {
+          padding: 0 !important;
+          margin: 0 !important;
+          max-width: 100% !important;
+        }
+
+        /* Styling for the main table container on print */
+        .bg-white.dark\:bg-slate-900\/70 {
+          box-shadow: none !important;
+          ring-width: 0 !important;
+          border-radius: 0 !important;
+          border: 1px solid #ccc !important;
+        }
+
+        table {
+          font-size: 9pt;
+          width: 100%;
+          border-collapse: collapse;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+        thead {
+          display: table-header-group;
+        }
+        th, td { padding: 8px; }
+        
+        /* Dark mode overrides for printing */
+        .dark, .dark body { background-color: #fff !important; }
+        .dark * {
+            color: #000 !important;
+            border-color: #ddd !important;
+            background-color: transparent !important;
+        }
+        .dark thead { background-color: #f1f5f9 !important; }
+        .dark tbody tr:nth-child(even) { background-color: #f8fafc !important; }
+        .dark [class*="border-l-"] { border-left-width: 4px !important; }
+
+        /* Hide rows that are not selected for printing */
+        table tbody tr:not(.print-selected) {
+            display: none !important;
+        }
+
+        /* Hide the checkbox column when printing */
+        table th:first-child,
+        table td:first-child {
+            display: none !important;
+        }
+      }
+    </style>
   </head>
   <body class="h-full bg-slate-100 dark:bg-slate-900">
     <div id="root" class="h-full"></div>
