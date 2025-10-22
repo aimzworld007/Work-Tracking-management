@@ -1,0 +1,5 @@
+{
+  "name": "Work Tracking Management System",
+  "description": "A web application to manage and track work items, inspired by a spreadsheet layout. It allows users to view, add, edit, and delete work tasks with various statuses and details.",
+  "requestFramePermissions": []
+}
