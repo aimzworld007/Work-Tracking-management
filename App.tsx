@@ -20,6 +20,10 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TABS[0]);
   
+  // State for sorting
+  const [sortColumn, setSortColumn] = useState<keyof WorkItem>('dateOfWork');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   // State for dynamic options from Firestore, initialized with static data
   const [workTypeOptions, setWorkTypeOptions] = useState<string[]>(staticWorkTypeOptions);
   const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
@@ -93,8 +97,9 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let items = workItems;
+    let items = [...workItems];
 
+    // Filtering
     if (searchTerm) {
       const lowercasedFilter = searchTerm.toLowerCase();
       items = items.filter(item =>
@@ -106,6 +111,7 @@ const App: React.FC = () => {
       );
     }
 
+    // Tab filtering
     if (activeTab === 'Archived') {
       items = items.filter(item => item.isArchived);
     } else {
@@ -115,8 +121,29 @@ const App: React.FC = () => {
       }
     }
 
+    // Sorting
+    if (sortColumn) {
+      items.sort((a, b) => {
+        const aValue = a[sortColumn];
+        const bValue = b[sortColumn];
+
+        if (aValue === bValue) return 0;
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+        
+        let comparison = 0;
+        if (sortColumn === 'dayCount') {
+          comparison = (aValue as number) - (bValue as number);
+        } else {
+          comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
     setFilteredItems(items);
-  }, [searchTerm, activeTab, workItems]);
+  }, [searchTerm, activeTab, workItems, sortColumn, sortDirection]);
 
 
   const handleOpenModal = (item: WorkItem | null = null) => {
@@ -281,6 +308,30 @@ const App: React.FC = () => {
     if (tab === 'Archived') return workItems.filter(item => item.isArchived).length;
     return workItems.filter(item => item.status === tab && !item.isArchived).length;
   }
+  
+  const handleSort = (column: keyof WorkItem) => {
+      if (sortColumn === column) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortColumn(column);
+        setSortDirection('asc');
+      }
+  };
+  
+  const SortableHeader = ({ column, title }: { column: keyof WorkItem, title: string }) => {
+    const isSorting = sortColumn === column;
+    const icon = isSorting ? (sortDirection === 'asc' ? '▲' : '▼') : '↕';
+    const iconVisibility = isSorting ? 'visible' : 'invisible group-hover:visible';
+
+    return (
+      <th scope="col" className="px-6 py-3">
+        <button onClick={() => handleSort(column)} className="flex items-center gap-2 group">
+          <span>{title}</span>
+          <span className={`text-gray-400 ${iconVisibility}`}>{icon}</span>
+        </button>
+      </th>
+    );
+  };
 
   return (
     <div className="bg-slate-100 min-h-screen font-sans">
@@ -348,13 +399,13 @@ const App: React.FC = () => {
               <table className="w-full text-sm text-left text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-slate-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3">Date</th>
-                    <th scope="col" className="px-6 py-3">Work By</th>
-                    <th scope="col" className="px-6 py-3">Work Type</th>
-                    <th scope="col" className="px-6 py-3">Status</th>
-                    <th scope="col" className="px-6 py-3">Customer Details</th>
-                    <th scope="col" className="px-6 py-3">Tracking Details</th>
-                    <th scope="col" className="px-6 py-3 text-center">Days Passed</th>
+                    <SortableHeader column="dateOfWork" title="Date" />
+                    <SortableHeader column="workBy" title="Work By" />
+                    <SortableHeader column="workOfType" title="Work Type" />
+                    <SortableHeader column="status" title="Status" />
+                    <SortableHeader column="customerName" title="Customer Details" />
+                    <SortableHeader column="trackingNumber" title="Tracking Details" />
+                    <SortableHeader column="dayCount" title="Days Passed" />
                     <th scope="col" className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
