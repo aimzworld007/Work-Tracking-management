@@ -33,8 +33,20 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, onEdit, onDelete, onArc
       </td>
       <td className="px-6 py-4">
         <div className="font-medium text-gray-900">{item.customerName}</div>
-        {item.passportNumber && <div className="text-xs text-gray-500">Passport: {item.passportNumber}</div>}
-        {item.mobileWhatsappNumber && <div className="text-xs text-gray-500">M/W: {item.mobileWhatsappNumber}</div>}
+        {(item.passportNumber || item.mobileWhatsappNumber) && (
+            <div className="mt-1 text-xs text-gray-500 space-y-0.5">
+                {item.passportNumber && (
+                    <div>
+                        <span className="font-semibold text-gray-600">Passport:</span> {item.passportNumber}
+                    </div>
+                )}
+                {item.mobileWhatsappNumber && (
+                    <div>
+                        <span className="font-semibold text-gray-600">Mobile/WhatsApp:</span> {item.mobileWhatsappNumber}
+                    </div>
+                )}
+            </div>
+        )}
       </td>
       <td className="px-6 py-4">
         {item.trackingNumber}

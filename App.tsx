@@ -27,9 +27,11 @@ const App: React.FC = () => {
 
 
   const calculateDayCount = (dateStr: string) => {
+    if (!dateStr) return 0; // Guard against null/undefined dates
     const today = new Date();
     // Add T00:00:00 to ensure the date is parsed in the local timezone, not UTC
     const workDate = new Date(`${dateStr}T00:00:00`);
+    if (isNaN(workDate.getTime())) return 0; // Guard against invalid date strings
     today.setHours(0, 0, 0, 0);
     workDate.setHours(0, 0, 0, 0);
     const diffTime = today.getTime() - workDate.getTime();
@@ -44,9 +46,15 @@ const App: React.FC = () => {
       const items: WorkItem[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        // Sanitize data to ensure optional fields have default values and prevent 'undefined' issues.
         items.push({
           ...data,
           id: doc.id,
+          passportNumber: data.passportNumber || '',
+          trackingNumber: data.trackingNumber || '',
+          mobileWhatsappNumber: data.mobileWhatsappNumber || '',
+          workBy: data.workBy || '',
+          isArchived: data.isArchived || false,
           dayCount: calculateDayCount(data.dateOfWork),
         } as WorkItem);
       });
