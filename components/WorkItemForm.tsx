@@ -44,9 +44,9 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     workOfType: workTypeOptions[0] || '',
     status: statusOptions[0] || '',
     customerName: '',
+    passportNumber: '',
     trackingNumber: '',
-    ppNumber: '',
-    customerNumber: '',
+    mobileWhatsappNumber: '',
   });
   const [isAddingNewWorkType, setIsAddingNewWorkType] = useState(false);
 
@@ -59,9 +59,9 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         workOfType: item.workOfType,
         status: item.status,
         customerName: item.customerName,
+        passportNumber: item.passportNumber,
         trackingNumber: item.trackingNumber,
-        ppNumber: item.ppNumber,
-        customerNumber: item.customerNumber,
+        mobileWhatsappNumber: item.mobileWhatsappNumber,
       });
       if (workTypeOptions.length > 0 && !workTypeOptions.includes(item.workOfType)) {
         setIsAddingNewWorkType(true);
@@ -75,9 +75,9 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            dateOfWork: new Date().toISOString().split('T')[0],
            workBy: '',
            customerName: '',
+           passportNumber: '',
            trackingNumber: '',
-           ppNumber: '',
-           customerNumber: '',
+           mobileWhatsappNumber: '',
            workOfType: workTypeOptions[0] || '',
            status: statusOptions[0] || '',
        }));
@@ -183,6 +183,17 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                 />
             </div>
             <div>
+                <label className="block text-sm font-medium text-gray-700">Passport Number</label>
+                <input
+                type="text"
+                name="passportNumber"
+                placeholder="Passport Number"
+                value={formData.passportNumber}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                />
+            </div>
+            <div>
                 <label className="block text-sm font-medium text-gray-700">Tracking Number</label>
                 <input
                 type="text"
@@ -194,23 +205,12 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700">PP Number</label>
+                <label className="block text-sm font-medium text-gray-700">Mobile/WhatsApp Number</label>
                 <input
                 type="text"
-                name="ppNumber"
-                placeholder="PP Number"
-                value={formData.ppNumber}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                />
-            </div>
-            <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Customer Number</label>
-                <input
-                type="text"
-                name="customerNumber"
-                placeholder="Customer Number"
-                value={formData.customerNumber}
+                name="mobileWhatsappNumber"
+                placeholder="Mobile/WhatsApp Number"
+                value={formData.mobileWhatsappNumber}
                 onChange={handleChange}
                 className="mt-1 p-2 border rounded-md w-full"
                 />

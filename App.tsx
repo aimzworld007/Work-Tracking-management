@@ -92,8 +92,8 @@ const App: React.FC = () => {
       items = items.filter(item =>
         item.customerName.toLowerCase().includes(lowercasedFilter) ||
         item.trackingNumber.toLowerCase().includes(lowercasedFilter) ||
-        item.ppNumber.toLowerCase().includes(lowercasedFilter) ||
-        item.customerNumber.toLowerCase().includes(lowercasedFilter) ||
+        item.passportNumber.toLowerCase().includes(lowercasedFilter) ||
+        item.mobileWhatsappNumber.toLowerCase().includes(lowercasedFilter) ||
         item.workOfType.toLowerCase().includes(lowercasedFilter)
       );
     }
@@ -166,7 +166,7 @@ const App: React.FC = () => {
       lines.shift();
     }
 
-    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'>[] = [];
+    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'mobileNumber'>[] = [];
     const newWorkTypes = new Set<string>();
     const newStatuses = new Set<string>();
     const newWorkBy = new Set<string>();
@@ -192,8 +192,8 @@ const App: React.FC = () => {
         status,
         customerName,
         trackingNumber,
-        ppNumber: '', // Not in the source data
-        customerNumber,
+        passportNumber: '', // Not in source data
+        mobileWhatsappNumber: customerNumber,
       };
       itemsToSave.push(item);
 
@@ -344,8 +344,8 @@ const App: React.FC = () => {
                     <th scope="col" className="px-6 py-3">Work By</th>
                     <th scope="col" className="px-6 py-3">Work Type</th>
                     <th scope="col" className="px-6 py-3">Status</th>
-                    <th scope="col" className="px-6 py-3">Customer Name</th>
-                    <th scope="col" className="px-6 py-3">Tracking / PP / Customer #</th>
+                    <th scope="col" className="px-6 py-3">Customer Details</th>
+                    <th scope="col" className="px-6 py-3">Tracking Details</th>
                     <th scope="col" className="px-6 py-3 text-center">Days Passed</th>
                     <th scope="col" className="px-6 py-3 text-right">Actions</th>
                   </tr>

@@ -15,6 +15,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, onEdit, onDelete, onArc
   const formatDate = (dateStr: string) => {
     // Add T00:00:00 to ensure date is parsed in local timezone
     const date = new Date(`${dateStr}T00:00:00`);
+    // FIX: Corrected typo from toLocaleDateDateString to toLocaleDateString
     return date.toLocaleDateString('en-CA', {
       year: 'numeric',
       month: '2-digit',
@@ -30,11 +31,13 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, onEdit, onDelete, onArc
       <td className="px-6 py-4">
         <StatusBadge status={item.status} />
       </td>
-      <td className="px-6 py-4">{item.customerName}</td>
       <td className="px-6 py-4">
-        {item.trackingNumber && <div className="text-xs">T: {item.trackingNumber}</div>}
-        {item.ppNumber && <div className="text-xs">PP: {item.ppNumber}</div>}
-        {item.customerNumber && <div className="text-xs">C: {item.customerNumber}</div>}
+        <div className="font-medium text-gray-900">{item.customerName}</div>
+        {item.passportNumber && <div className="text-xs text-gray-500">Passport: {item.passportNumber}</div>}
+        {item.mobileWhatsappNumber && <div className="text-xs text-gray-500">M/W: {item.mobileWhatsappNumber}</div>}
+      </td>
+      <td className="px-6 py-4">
+        {item.trackingNumber}
       </td>
       <td className="px-6 py-4 text-center font-semibold">{item.dayCount}</td>
       <td className="px-6 py-4 text-right">

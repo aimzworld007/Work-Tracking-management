@@ -9,9 +9,9 @@ export interface WorkItem {
   workOfType: string;
   status: Status;
   customerName: string;
+  passportNumber: string;
   trackingNumber: string;
-  ppNumber: string;
-  customerNumber: string;
+  mobileWhatsappNumber: string;
   dayCount: number;
   isArchived: boolean;
 }
