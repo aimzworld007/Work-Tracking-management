@@ -1,6 +1,9 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// FIX: Use Firebase v8 compact syntax for imports.
+// FIX: The project uses the Firebase v9+ SDK with v8 syntax, causing type errors.
+// Using the 'compat' libraries provides a compatibility layer for the v8 API.
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -15,7 +18,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// FIX: Use Firebase v8 compact syntax for initialization.
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
 
-export { db };
+export { db, firebase };

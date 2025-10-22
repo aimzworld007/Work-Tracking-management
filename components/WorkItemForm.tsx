@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
-import { GoogleGenAI, Type } from '@google/genai';
-import { SparklesIcon } from './icons';
-
 
 interface WorkItemFormProps {
   item: WorkItem | null;
@@ -25,9 +22,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     ppNumber: '',
     customerNumber: '',
   });
-
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -70,65 +64,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     onSave(submissionData);
   };
 
-  const handleGenerate = async () => {
-    if (!aiPrompt.trim()) return;
-    setIsGenerating(true);
-
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `Parse the following text and extract work item details. If a value is not present, leave it as an empty string. Choose from the provided options where applicable.
-            
-            Available Work Types: ${workTypeOptions.join(', ')}
-            Available Statuses: ${statusOptions.join(', ')}
-            Available 'Work By' names: ${workByOptions.join(', ')}
-
-            Text: "${aiPrompt}"
-            `,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        workBy: { type: Type.STRING },
-                        workOfType: { type: Type.STRING },
-                        status: { type: Type.STRING },
-                        customerName: { type: Type.STRING },
-                        trackingNumber: { type: Type.STRING },
-                        ppNumber: { type: Type.STRING },
-                        customerNumber: { type: Type.STRING },
-                    }
-                },
-            },
-        });
-        const resultText = response.text;
-        let parsedData;
-        try {
-            parsedData = JSON.parse(resultText);
-        } catch (e) {
-            console.error("Failed to parse AI response:", e);
-            alert("AI returned an invalid response. Please try again.");
-            return;
-        }
-
-
-        setFormData(prev => ({
-            ...prev,
-            ...parsedData,
-            workOfType: parsedData.workOfType || prev.workOfType,
-            status: parsedData.status || prev.status,
-            workBy: parsedData.workBy || prev.workBy,
-        }));
-
-    } catch (error) {
-        console.error("Error generating with AI:", error);
-        alert("Failed to generate details with AI. Please check the console for errors.");
-    } finally {
-        setIsGenerating(false);
-    }
-  };
-  
   // A component to handle a select dropdown that can also accept new values
   const SelectWithAddNew = ({ label, name, value, onChange, options }: { label: string, name: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, options: string[] }) => {
     const [isNew, setIsNew] = useState(false);
@@ -172,27 +107,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-full overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">{item ? 'Edit Work Item' : 'Add New Work Item'}</h2>
         <form onSubmit={handleSubmit}>
-           <div className="mb-4 p-4 border rounded-lg bg-slate-50">
-              <label htmlFor="ai-prompt" className="block text-sm font-medium text-gray-700 mb-1">Describe with AI</label>
-              <textarea
-                  id="ai-prompt"
-                  rows={3}
-                  className="w-full p-2 border rounded-md"
-                  placeholder="e.g., New Pakistani PP renewal for John Doe, tracking # 123, by Ainul"
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-              />
-              <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 disabled:bg-indigo-300"
-              >
-                  {isGenerating ? 'Generating...' : 'Generate Details'}
-                  <SparklesIcon />
-              </button>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
                 <label className="block text-sm font-medium text-gray-700">Date of Work</label>

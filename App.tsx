@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
-import { AddIcon } from './components/icons';
-import { db } from './firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, arrayUnion } from 'firebase/firestore';
+import ImportModal from './components/ImportModal';
+import { AddIcon, ImportIcon } from './components/icons';
+// FIX: Use Firebase v8 compact syntax for imports. This replaces the v9 modular imports.
+import { db, firebase } from './firebase';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -13,6 +14,7 @@ const App: React.FC = () => {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<WorkItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -35,8 +37,9 @@ const App: React.FC = () => {
 
   // Fetch work items from Firestore in real-time
   useEffect(() => {
-    const q = query(collection(db, "work-items"), orderBy("dateOfWork", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // FIX: Use Firebase v8 compact syntax for query and snapshot
+    const q = db.collection("work-items").orderBy("dateOfWork", "desc");
+    const unsubscribe = q.onSnapshot((querySnapshot) => {
       const items: WorkItem[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -55,13 +58,17 @@ const App: React.FC = () => {
   
   // Fetch dynamic options from Firestore
   useEffect(() => {
-    const optionsDocRef = doc(db, 'options', 'appData');
-    const unsubscribe = onSnapshot(optionsDocRef, (doc) => {
-      if (doc.exists()) {
+    // FIX: Use Firebase v8 compact syntax for document reference and snapshot
+    const optionsDocRef = db.collection('options').doc('appData');
+    const unsubscribe = optionsDocRef.onSnapshot((doc) => {
+      // FIX: Use .exists property instead of .exists() method for v8
+      if (doc.exists) {
         const data = doc.data();
-        setWorkTypeOptions(data.workTypes || []);
-        setStatusOptions(data.statuses || []);
-        setWorkByOptions(data.workBy || []);
+        if (data) {
+            setWorkTypeOptions(data.workTypes || []);
+            setStatusOptions(data.statuses || []);
+            setWorkByOptions(data.workBy || []);
+        }
       } else {
         // You might want to initialize the document if it doesn't exist
         console.log("Options document does not exist!");
@@ -107,31 +114,37 @@ const App: React.FC = () => {
     setIsModalOpen(false);
     setCurrentItem(null);
   };
+  
+  const handleOpenImportModal = () => setIsImportModalOpen(true);
+  const handleCloseImportModal = () => setIsImportModalOpen(false);
 
   const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'> & { id?: string }) => {
     try {
       if (itemToSave.id) {
         // Edit
-        const docRef = doc(db, "work-items", itemToSave.id);
-        await updateDoc(docRef, { ...itemToSave });
+        // FIX: Use Firebase v8 compact syntax for document reference and update
+        const docRef = db.collection("work-items").doc(itemToSave.id);
+        await docRef.update({ ...itemToSave });
       } else {
         // Add
-        await addDoc(collection(db, "work-items"), { 
+        // FIX: Use Firebase v8 compact syntax for add
+        await db.collection("work-items").add({ 
           ...itemToSave,
           isArchived: false,
         });
       }
       
       // Update dynamic options if new ones were added
-      const optionsDocRef = doc(db, 'options', 'appData');
+      // FIX: Use Firebase v8 compact syntax for document reference and arrayUnion
+      const optionsDocRef = db.collection('options').doc('appData');
       if (!workTypeOptions.includes(itemToSave.workOfType)) {
-          await updateDoc(optionsDocRef, { workTypes: arrayUnion(itemToSave.workOfType) });
+          await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(itemToSave.workOfType) });
       }
       if (!statusOptions.includes(itemToSave.status)) {
-          await updateDoc(optionsDocRef, { statuses: arrayUnion(itemToSave.status) });
+          await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(itemToSave.status) });
       }
       if (itemToSave.workBy && !workByOptions.includes(itemToSave.workBy)) {
-          await updateDoc(optionsDocRef, { workBy: arrayUnion(itemToSave.workBy) });
+          await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
       }
 
     } catch (error) {
@@ -139,10 +152,91 @@ const App: React.FC = () => {
     }
     handleCloseModal();
   };
+  
+  const handleImport = async (data: string) => {
+    const lines = data.trim().split('\n');
+    // Skip header
+    if (lines.length > 0) {
+      lines.shift();
+    }
+
+    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'>[] = [];
+    const newWorkTypes = new Set<string>();
+    const newStatuses = new Set<string>();
+    const newWorkBy = new Set<string>();
+
+    for (const line of lines) {
+      const values = line.split('\t');
+      if (values.length < 8) {
+        console.warn("Skipping malformed row:", line);
+        continue;
+      }
+
+      const [_sn, dateOfWork, workBy, workOfType, status, customerName, trackingNumber, customerNumber] = values.map(v => v.trim());
+
+      if (!dateOfWork || !workOfType || !status || !customerName) {
+        console.warn("Skipping row with missing required fields:", line);
+        continue;
+      }
+
+      const item = {
+        dateOfWork,
+        workBy,
+        workOfType,
+        status,
+        customerName,
+        trackingNumber,
+        ppNumber: '', // Not in the source data
+        customerNumber,
+      };
+      itemsToSave.push(item);
+
+      if (item.workOfType && !workTypeOptions.includes(item.workOfType)) newWorkTypes.add(item.workOfType);
+      if (item.status && !statusOptions.includes(item.status)) newStatuses.add(item.status);
+      if (item.workBy && !workByOptions.includes(item.workBy)) newWorkBy.add(item.workBy);
+    }
+
+    if (itemsToSave.length === 0) {
+      alert("No valid items found to import.");
+      return;
+    }
+
+    try {
+      const batch = db.batch();
+      itemsToSave.forEach(item => {
+        const docRef = db.collection("work-items").doc();
+        batch.set(docRef, { ...item, isArchived: false });
+      });
+      await batch.commit();
+
+      const optionsDocRef = db.collection('options').doc('appData');
+      const updates: { [key: string]: any } = {};
+      if (newWorkTypes.size > 0) {
+        updates.workTypes = firebase.firestore.FieldValue.arrayUnion(...Array.from(newWorkTypes));
+      }
+      if (newStatuses.size > 0) {
+        updates.statuses = firebase.firestore.FieldValue.arrayUnion(...Array.from(newStatuses));
+      }
+      if (newWorkBy.size > 0) {
+        updates.workBy = firebase.firestore.FieldValue.arrayUnion(...Array.from(newWorkBy));
+      }
+      if (Object.keys(updates).length > 0) {
+        await optionsDocRef.update(updates);
+      }
+
+      alert(`Successfully imported ${itemsToSave.length} items.`);
+      handleCloseImportModal();
+    } catch (error) {
+      console.error("Error importing documents: ", error);
+      alert("An error occurred during import. Check the console for details.");
+    }
+  };
+
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "work-items", id));
+      // FIX: Use Firebase v8 compact syntax for delete
+      await db.collection("work-items").doc(id).delete();
     } catch (error) {
       console.error("Error deleting document: ", error);
     }
@@ -150,8 +244,9 @@ const App: React.FC = () => {
   
   const handleArchive = async (id: string) => {
     try {
-        const docRef = doc(db, "work-items", id);
-        await updateDoc(docRef, { isArchived: true });
+        // FIX: Use Firebase v8 compact syntax for document reference and update
+        const docRef = db.collection("work-items").doc(id);
+        await docRef.update({ isArchived: true });
     } catch (error) {
         console.error("Error archiving document: ", error);
     }
@@ -159,8 +254,9 @@ const App: React.FC = () => {
   
   const handleUnarchive = async (id: string) => {
     try {
-        const docRef = doc(db, "work-items", id);
-        await updateDoc(docRef, { isArchived: false });
+        // FIX: Use Firebase v8 compact syntax for document reference and update
+        const docRef = db.collection("work-items").doc(id);
+        await docRef.update({ isArchived: false });
     } catch(error) {
         console.error("Error unarchiving document: ", error);
     }
@@ -194,13 +290,22 @@ const App: React.FC = () => {
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                 </div>
-                 <button
-                  onClick={() => handleOpenModal()}
-                  className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm transition-transform transform hover:scale-105"
-                >
-                  <AddIcon />
-                  <span className="hidden sm:inline">Add New Work</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleOpenImportModal}
+                    className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-sm transition-transform transform hover:scale-105"
+                  >
+                    <ImportIcon />
+                    <span className="hidden sm:inline">Import</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenModal()}
+                    className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm transition-transform transform hover:scale-105"
+                  >
+                    <AddIcon />
+                    <span className="hidden sm:inline">Add New</span>
+                  </button>
+                </div>
             </div>
         </div>
 
@@ -269,6 +374,13 @@ const App: React.FC = () => {
             workTypeOptions={workTypeOptions}
             statusOptions={statusOptions}
           />
+        )}
+
+        {isImportModalOpen && (
+            <ImportModal
+                onClose={handleCloseImportModal}
+                onImport={handleImport}
+            />
         )}
       </div>
     </div>
