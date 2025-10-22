@@ -4,7 +4,8 @@ import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
-import { AddIcon, ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
+import ThemeToggle from './components/ThemeToggle';
+import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 
@@ -27,6 +28,25 @@ const App: React.FC = () => {
   const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
   const [workByOptions, setWorkByOptions] = useState<string[]>(INITIAL_WORK_BY_OPTIONS);
 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme') as 'light' | 'dark';
+    }
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   const calculateDayCount = (dateStr: string) => {
     if (!dateStr) return 0;
@@ -279,6 +299,16 @@ const App: React.FC = () => {
         console.error("Error unarchiving document: ", error);
     }
   };
+
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      const docRef = db.collection("work-items").doc(id);
+      await docRef.update({ status });
+    } catch (error) {
+      console.error("Error updating status: ", error);
+      alert("Failed to update status. Please try again.");
+    }
+  };
   
   const getTabCount = (tab: string): number => {
     if (tab === 'All Items') return workItems.filter(item => !item.isArchived).length;
@@ -300,7 +330,7 @@ const App: React.FC = () => {
     const Icon = isSorting ? (sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon) : ChevronUpDownIcon;
 
     return (
-      <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-slate-900 ${className}`}>
+      <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 ${className}`}>
         <button onClick={() => handleSort(column)} className="group inline-flex items-center gap-1">
           {title}
           <span className={`transition-opacity ${isSorting ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'}`}>
@@ -312,19 +342,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-100 min-h-screen font-sans">
+    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 {/* Search Box */}
                 <div className="relative w-full sm:w-auto">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <SearchIcon className="h-5 w-5 text-gray-400" />
+                        <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search tasks..."
-                      className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                     />
@@ -332,8 +362,8 @@ const App: React.FC = () => {
                 
                 {/* Header */}
                 <div className="text-center order-first sm:order-none">
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">Work Management Dashboard</h1>
-                  <p className="text-slate-600 mt-1 text-sm">Track and manage all your work items efficiently.</p>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Work Management Dashboard</h1>
+                  <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
                 </div>
 
                 {/* Action Buttons */}
@@ -341,17 +371,18 @@ const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleOpenImportModal}
-                    className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+                    className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
                     <ImportIcon className="-ml-0.5 h-5 w-5" />
                     Import
                   </button>
+                  <ThemeToggle theme={theme} setTheme={setTheme} />
                 </div>
             </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm ring-1 ring-slate-900/5">
-            <div className="border-b border-slate-200">
+        <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="border-b border-slate-200 dark:border-slate-800">
                 <nav className="-mb-px flex gap-x-1 sm:gap-x-4 overflow-x-auto px-4">
                     {TABS.map(tab => (
                         <button
@@ -359,12 +390,12 @@ const App: React.FC = () => {
                             onClick={() => setActiveTab(tab)}
                             className={`${
                                 activeTab === tab
-                                ? 'border-indigo-500 text-indigo-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
                             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
                         >
                             {tab}
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                 {getTabCount(tab)}
                             </span>
                         </button>
@@ -372,10 +403,10 @@ const App: React.FC = () => {
                 </nav>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">SN</th>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 sm:pl-6">SN</th>
                     <SortableHeader column="dateOfWork" title="Date" className="px-3" />
                     <SortableHeader column="workBy" title="Work By" className="px-3" />
                     <SortableHeader column="workOfType" title="Work Type" className="px-3" />
@@ -388,7 +419,7 @@ const App: React.FC = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
                   {filteredItems.map((item, index) => (
                     <WorkItemRow
                       key={item.id}
@@ -398,6 +429,8 @@ const App: React.FC = () => {
                       onDelete={() => handleDelete(item.id!)}
                       onArchive={() => handleArchive(item.id!)}
                       onUnarchive={() => handleUnarchive(item.id!)}
+                      onStatusChange={handleStatusChange}
+                      statusOptions={statusOptions}
                     />
                   ))}
                 </tbody>
@@ -407,8 +440,8 @@ const App: React.FC = () => {
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                     </svg>
-                  <h3 className="mt-2 text-sm font-semibold text-gray-900">No work items</h3>
-                  <p className="mt-1 text-sm text-gray-500">Get started by creating a new work item.</p>
+                  <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-slate-200">No work items</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Get started by creating a new work item.</p>
                 </div>
               )}
             </div>

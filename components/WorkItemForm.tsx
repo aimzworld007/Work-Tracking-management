@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import { CloseIcon } from './icons';
+import DatePicker from './DatePicker';
 
 interface WorkItemFormProps {
   item: WorkItem | null;
@@ -15,7 +16,7 @@ const DatalistInput = ({ label, name, value, onChange, options, required = false
     const dataListId = `${name}-options`;
     return (
         <div>
-            <label htmlFor={name} className="block text-sm font-medium leading-6 text-slate-900">{label}</label>
+            <label htmlFor={name} className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">{label}</label>
             <div className="mt-2">
                 <input
                     type="text"
@@ -24,7 +25,7 @@ const DatalistInput = ({ label, name, value, onChange, options, required = false
                     value={value}
                     onChange={onChange}
                     list={dataListId}
-                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
                     placeholder={`Type or select a ${label.toLowerCase()}`}
                     required={required}
                 />
@@ -97,54 +98,53 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
 
   return (
     <div className="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div className="fixed inset-0 bg-gray-500 dark:bg-black bg-opacity-75 transition-opacity"></div>
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+            <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-slate-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
-                    <button type="button" onClick={onClose} className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <button type="button" onClick={onClose} className="rounded-md bg-white dark:bg-slate-800 text-gray-400 dark:text-slate-400 hover:text-gray-500 dark:hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         <span className="sr-only">Close</span>
                         <CloseIcon className="h-6 w-6" />
                     </button>
                 </div>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div className="sm:flex sm:items-start">
                          <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                            <h3 className="text-base font-semibold leading-6 text-gray-900" id="modal-title">{item ? 'Edit Work Item' : 'Add New Work Item'}</h3>
+                            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-slate-100" id="modal-title">{item ? 'Edit Work Item' : 'Add New Work Item'}</h3>
                             <div className="mt-2">
                                 <form onSubmit={handleSubmit} id="workItemForm">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <div>
-                                            <label htmlFor="dateOfWork" className="block text-sm font-medium leading-6 text-slate-900">Date of Work</label>
-                                            <div className="mt-2">
-                                                <input id="dateOfWork" type="date" name="dateOfWork" value={formData.dateOfWork} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required />
-                                            </div>
-                                        </div>
+                                        <DatePicker
+                                            label="Date of Work"
+                                            value={formData.dateOfWork}
+                                            onChange={(date) => setFormData(prev => ({ ...prev, dateOfWork: date }))}
+                                        />
                                         <DatalistInput label="Work By" name="workBy" value={formData.workBy} onChange={handleChange} options={workByOptions} />
                                         <DatalistInput label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleChange} options={workTypeOptions} required />
                                         <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
                                         <div className="md:col-span-2">
-                                            <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900">Customer Name</label>
+                                            <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Customer Name</label>
                                             <div className="mt-2">
-                                                <input id="customerName" type="text" name="customerName" placeholder="e.g. John Doe" value={formData.customerName} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required />
+                                                <input id="customerName" type="text" name="customerName" placeholder="e.g. John Doe" value={formData.customerName} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" required />
                                             </div>
                                         </div>
                                         <div>
-                                            <label htmlFor="passportNumber" className="block text-sm font-medium leading-6 text-slate-900">Passport Number</label>
+                                            <label htmlFor="passportNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Passport Number</label>
                                             <div className="mt-2">
-                                                <input id="passportNumber" type="text" name="passportNumber" placeholder="Passport Number" value={formData.passportNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                                <input id="passportNumber" type="text" name="passportNumber" placeholder="Passport Number" value={formData.passportNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
                                             </div>
                                         </div>
                                         <div>
-                                            <label htmlFor="trackingNumber" className="block text-sm font-medium leading-6 text-slate-900">Tracking Number</label>
+                                            <label htmlFor="trackingNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Tracking Number</label>
                                             <div className="mt-2">
-                                                <input id="trackingNumber" type="text" name="trackingNumber" placeholder="Tracking Number" value={formData.trackingNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                                <input id="trackingNumber" type="text" name="trackingNumber" placeholder="Tracking Number" value={formData.trackingNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
                                             </div>
                                         </div>
                                         <div className="md:col-span-2">
-                                            <label htmlFor="mobileWhatsappNumber" className="block text-sm font-medium leading-6 text-slate-900">Mobile/WhatsApp Number</label>
+                                            <label htmlFor="mobileWhatsappNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Mobile/WhatsApp Number</label>
                                             <div className="mt-2">
-                                                <input id="mobileWhatsappNumber" type="text" name="mobileWhatsappNumber" placeholder="Mobile/WhatsApp Number" value={formData.mobileWhatsappNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                                <input id="mobileWhatsappNumber" type="text" name="mobileWhatsappNumber" placeholder="Mobile/WhatsApp Number" value={formData.mobileWhatsappNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
                                             </div>
                                         </div>
                                     </div>
@@ -153,11 +153,11 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                         </div>
                     </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <div className="bg-gray-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-200 dark:border-slate-700">
                     <button type="submit" form="workItemForm" className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">
                         Save
                     </button>
-                    <button type="button" onClick={onClose} className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                    <button type="button" onClick={onClose} className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 sm:mt-0 sm:w-auto">
                         Cancel
                     </button>
                 </div>
