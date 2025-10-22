@@ -11,6 +11,36 @@ interface WorkItemRowProps {
   onUnarchive: () => void;
 }
 
+const COLORS = [
+  'border-l-pink-400',
+  'border-l-indigo-400',
+  'border-l-amber-400',
+  'border-l-teal-400',
+  'border-l-cyan-400',
+  'border-l-lime-400',
+  'border-l-purple-400',
+  'border-l-sky-400',
+  'border-l-rose-400',
+  'border-l-emerald-400',
+];
+
+const stringToHash = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; 
+  }
+  return Math.abs(hash);
+};
+
+const getWorkTypeColorClass = (workType: string): string => {
+  if (!workType) return 'border-l-slate-200';
+  const hash = stringToHash(workType);
+  return COLORS[hash % COLORS.length];
+};
+
+
 const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, onEdit, onDelete, onArchive, onUnarchive }) => {
   const formatDate = (dateStr: string) => {
     const date = new Date(`${dateStr}T00:00:00`);
@@ -20,9 +50,11 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, onEdit, onDelete, onArc
       day: '2-digit',
     });
   };
+  
+  const colorClass = getWorkTypeColorClass(item.workOfType);
 
   return (
-    <tr className="even:bg-slate-50/50 hover:bg-indigo-50/20 transition-colors duration-150">
+    <tr className={`even:bg-slate-50/50 hover:bg-indigo-50/20 transition-colors duration-150 border-l-4 ${colorClass}`}>
       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">{formatDate(item.dateOfWork)}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{item.workBy}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{item.workOfType}</td>
