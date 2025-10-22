@@ -3,6 +3,7 @@ import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
+import Fab from './components/Fab';
 import { AddIcon, ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
@@ -313,41 +314,37 @@ const App: React.FC = () => {
   return (
     <div className="bg-slate-100 min-h-screen font-sans">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Work Management Dashboard</h1>
-          <p className="text-slate-600 mt-1">Track and manage all your work items efficiently.</p>
-        </header>
-
-        <div className="mb-6">
+        <div className="mb-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="relative w-full sm:max-w-xs">
+                {/* Search Box */}
+                <div className="relative w-full sm:w-auto">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <SearchIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search tasks..."
-                      className="block w-full rounded-md border-0 py-2 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                
+                {/* Header */}
+                <div className="text-center order-first sm:order-none">
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">Work Management Dashboard</h1>
+                  <p className="text-slate-600 mt-1 text-sm">Track and manage all your work items efficiently.</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handleOpenImportModal}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-x-2 rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+                    className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
                   >
                     <ImportIcon className="-ml-0.5 h-5 w-5" />
                     Import
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenModal()}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                  >
-                    <AddIcon className="-ml-0.5 h-5 w-5" />
-                    Add New
                   </button>
                 </div>
             </div>
@@ -434,6 +431,8 @@ const App: React.FC = () => {
                 onImport={handleImport}
             />
         )}
+
+        <Fab onClick={() => handleOpenModal()} />
       </div>
     </div>
   );
