@@ -6,6 +6,7 @@ import ImportModal from './components/ImportModal';
 import { AddIcon, ImportIcon } from './components/icons';
 // FIX: Use Firebase v8 compact syntax for imports. This replaces the v9 modular imports.
 import { db, firebase } from './firebase';
+import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -19,10 +20,10 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TABS[0]);
   
-  // State for dynamic options from Firestore
-  const [workTypeOptions, setWorkTypeOptions] = useState<string[]>([]);
-  const [statusOptions, setStatusOptions] = useState<string[]>([]);
-  const [workByOptions, setWorkByOptions] = useState<string[]>([]);
+  // State for dynamic options from Firestore, initialized with static data
+  const [workTypeOptions, setWorkTypeOptions] = useState<string[]>(staticWorkTypeOptions);
+  const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
+  const [workByOptions, setWorkByOptions] = useState<string[]>(INITIAL_WORK_BY_OPTIONS);
 
 
   const calculateDayCount = (dateStr: string) => {
@@ -56,22 +57,27 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
   
-  // Fetch dynamic options from Firestore
+  // Fetch and merge dynamic options from Firestore
   useEffect(() => {
-    // FIX: Use Firebase v8 compact syntax for document reference and snapshot
     const optionsDocRef = db.collection('options').doc('appData');
     const unsubscribe = optionsDocRef.onSnapshot((doc) => {
       // FIX: Use .exists property instead of .exists() method for v8
       if (doc.exists) {
         const data = doc.data();
         if (data) {
-            setWorkTypeOptions(data.workTypes || []);
-            setStatusOptions(data.statuses || []);
-            setWorkByOptions(data.workBy || []);
+            // Merge Firestore options with initial static options, avoiding duplicates
+            setWorkTypeOptions(prev => [...new Set([...prev, ...(data.workTypes || [])])]);
+            setStatusOptions(prev => [...new Set([...prev, ...(data.statuses || [])])]);
+            setWorkByOptions(prev => [...new Set([...prev, ...(data.workBy || [])])]);
         }
       } else {
-        // You might want to initialize the document if it doesn't exist
-        console.log("Options document does not exist!");
+        // Initialize the document if it doesn't exist
+        console.log("Options document does not exist, creating it with default values.");
+        optionsDocRef.set({
+            workTypes: staticWorkTypeOptions,
+            statuses: INITIAL_STATUS_OPTIONS,
+            workBy: INITIAL_WORK_BY_OPTIONS,
+        }).catch(err => console.error("Error creating options document:", err));
       }
     });
 
