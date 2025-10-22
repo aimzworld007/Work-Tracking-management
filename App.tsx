@@ -44,16 +44,20 @@ const App: React.FC = () => {
       const items: WorkItem[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        // Ensure all required fields have a default value to prevent crashes from undefined properties
         items.push({
-          ...data,
           id: doc.id,
+          dateOfWork: data.dateOfWork || '',
+          workBy: data.workBy || '',
+          workOfType: data.workOfType || 'N/A',
+          status: data.status || 'N/A',
+          customerName: data.customerName || 'N/A',
           passportNumber: data.passportNumber || '',
           trackingNumber: data.trackingNumber || '',
           mobileWhatsappNumber: data.mobileWhatsappNumber || '',
-          workBy: data.workBy || '',
           isArchived: data.isArchived || false,
           dayCount: calculateDayCount(data.dateOfWork),
-        } as WorkItem);
+        });
       });
       setWorkItems(items);
     });
@@ -180,7 +184,7 @@ const App: React.FC = () => {
       lines.shift();
     }
 
-    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'mobileNumber'>[] = [];
+    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'>[] = [];
     const newWorkTypes = new Set<string>();
     const newStatuses = new Set<string>();
     const newWorkBy = new Set<string>();
@@ -374,7 +378,8 @@ const App: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                   <tr>
-                    <SortableHeader column="dateOfWork" title="Date" className="pl-4 sm:pl-6" />
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">SN</th>
+                    <SortableHeader column="dateOfWork" title="Date" className="px-3" />
                     <SortableHeader column="workBy" title="Work By" className="px-3" />
                     <SortableHeader column="workOfType" title="Work Type" className="px-3" />
                     <SortableHeader column="status" title="Status" className="px-3" />
@@ -387,10 +392,11 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {filteredItems.map(item => (
+                  {filteredItems.map((item, index) => (
                     <WorkItemRow
                       key={item.id}
                       item={item}
+                      serialNumber={index + 1}
                       onEdit={() => handleOpenModal(item)}
                       onDelete={() => handleDelete(item.id!)}
                       onArchive={() => handleArchive(item.id!)}

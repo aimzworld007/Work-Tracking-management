@@ -49,7 +49,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     trackingNumber: '',
     mobileWhatsappNumber: '',
   });
-  const [isAddingNewWorkType, setIsAddingNewWorkType] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -64,11 +63,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         trackingNumber: item.trackingNumber,
         mobileWhatsappNumber: item.mobileWhatsappNumber,
       });
-      if (workTypeOptions.length > 0 && !workTypeOptions.includes(item.workOfType)) {
-        setIsAddingNewWorkType(true);
-      } else {
-        setIsAddingNewWorkType(false);
-      }
     } else {
        setFormData(prev => ({
            ...prev,
@@ -81,24 +75,12 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            workOfType: workTypeOptions[0] || '',
            status: statusOptions[0] || '',
        }));
-       setIsAddingNewWorkType(false);
     }
   }, [item, workByOptions, workTypeOptions, statusOptions]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleWorkTypeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { value } = e.target;
-    if (value === '__add_new__') {
-      setIsAddingNewWorkType(true);
-      setFormData(prev => ({ ...prev, workOfType: '' }));
-    } else {
-      setIsAddingNewWorkType(false);
-      setFormData(prev => ({ ...prev, workOfType: value }));
-    }
   };
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -139,21 +121,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                             </div>
                                         </div>
                                         <DatalistInput label="Work By" name="workBy" value={formData.workBy} onChange={handleChange} options={workByOptions} />
-                                        <div>
-                                          <label htmlFor="workOfType" className="block text-sm font-medium leading-6 text-slate-900">Work Type</label>
-                                          <div className="mt-2">
-                                              <select id="workOfType" value={isAddingNewWorkType ? '__add_new__' : formData.workOfType} onChange={handleWorkTypeSelectChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
-                                                <option value="" disabled>Select a type</option>
-                                                {workTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                <option value="__add_new__">Add New...</option>
-                                              </select>
-                                          </div>
-                                          {isAddingNewWorkType && (
-                                            <div className="mt-2">
-                                                <input type="text" name="workOfType" value={formData.workOfType} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Enter new work type" required autoFocus />
-                                            </div>
-                                          )}
-                                        </div>
+                                        <DatalistInput label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleChange} options={workTypeOptions} required />
                                         <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
                                         <div className="md:col-span-2">
                                             <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900">Customer Name</label>
