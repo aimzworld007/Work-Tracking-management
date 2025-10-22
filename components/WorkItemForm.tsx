@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
+import { CloseIcon } from './icons';
 
 interface WorkItemFormProps {
   item: WorkItem | null;
@@ -10,24 +11,24 @@ interface WorkItemFormProps {
   statusOptions: string[];
 }
 
-
-// A component to handle an input with a datalist for suggestions.
 const DatalistInput = ({ label, name, value, onChange, options, required = false }: { label: string, name: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, options: string[], required?: boolean }) => {
     const dataListId = `${name}-options`;
     return (
         <div>
-            <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
-            <input
-                type="text"
-                id={name}
-                name={name}
-                value={value}
-                onChange={onChange}
-                list={dataListId}
-                className="mt-1 p-2 border rounded-md w-full"
-                placeholder={`Type or select a ${label.toLowerCase()}`}
-                required={required}
-            />
+            <label htmlFor={name} className="block text-sm font-medium leading-6 text-slate-900">{label}</label>
+            <div className="mt-2">
+                <input
+                    type="text"
+                    id={name}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    list={dataListId}
+                    className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    placeholder={`Type or select a ${label.toLowerCase()}`}
+                    required={required}
+                />
+            </div>
             <datalist id={dataListId}>
                 {options.map(opt => <option key={opt} value={opt} />)}
             </datalist>
@@ -69,7 +70,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         setIsAddingNewWorkType(false);
       }
     } else {
-       // Set defaults for new item form
        setFormData(prev => ({
            ...prev,
            dateOfWork: new Date().toISOString().split('T')[0],
@@ -114,124 +114,87 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-full overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">{item ? 'Edit Work Item' : 'Add New Work Item'}</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Date of Work</label>
-                <input
-                type="date"
-                name="dateOfWork"
-                value={formData.dateOfWork}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                required
-                />
+    <div className="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+      <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div className="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
+                    <button type="button" onClick={onClose} className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <span className="sr-only">Close</span>
+                        <CloseIcon className="h-6 w-6" />
+                    </button>
+                </div>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start">
+                         <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 className="text-base font-semibold leading-6 text-gray-900" id="modal-title">{item ? 'Edit Work Item' : 'Add New Work Item'}</h3>
+                            <div className="mt-2">
+                                <form onSubmit={handleSubmit} id="workItemForm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div>
+                                            <label htmlFor="dateOfWork" className="block text-sm font-medium leading-6 text-slate-900">Date of Work</label>
+                                            <div className="mt-2">
+                                                <input id="dateOfWork" type="date" name="dateOfWork" value={formData.dateOfWork} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required />
+                                            </div>
+                                        </div>
+                                        <DatalistInput label="Work By" name="workBy" value={formData.workBy} onChange={handleChange} options={workByOptions} />
+                                        <div>
+                                          <label htmlFor="workOfType" className="block text-sm font-medium leading-6 text-slate-900">Work Type</label>
+                                          <div className="mt-2">
+                                              <select id="workOfType" value={isAddingNewWorkType ? '__add_new__' : formData.workOfType} onChange={handleWorkTypeSelectChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                                <option value="" disabled>Select a type</option>
+                                                {workTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                <option value="__add_new__">Add New...</option>
+                                              </select>
+                                          </div>
+                                          {isAddingNewWorkType && (
+                                            <div className="mt-2">
+                                                <input type="text" name="workOfType" value={formData.workOfType} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Enter new work type" required autoFocus />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
+                                        <div className="md:col-span-2">
+                                            <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900">Customer Name</label>
+                                            <div className="mt-2">
+                                                <input id="customerName" type="text" name="customerName" placeholder="e.g. John Doe" value={formData.customerName} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="passportNumber" className="block text-sm font-medium leading-6 text-slate-900">Passport Number</label>
+                                            <div className="mt-2">
+                                                <input id="passportNumber" type="text" name="passportNumber" placeholder="Passport Number" value={formData.passportNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="trackingNumber" className="block text-sm font-medium leading-6 text-slate-900">Tracking Number</label>
+                                            <div className="mt-2">
+                                                <input id="trackingNumber" type="text" name="trackingNumber" placeholder="Tracking Number" value={formData.trackingNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label htmlFor="mobileWhatsappNumber" className="block text-sm font-medium leading-6 text-slate-900">Mobile/WhatsApp Number</label>
+                                            <div className="mt-2">
+                                                <input id="mobileWhatsappNumber" type="text" name="mobileWhatsappNumber" placeholder="Mobile/WhatsApp Number" value={formData.mobileWhatsappNumber} onChange={handleChange} className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="submit" form="workItemForm" className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">
+                        Save
+                    </button>
+                    <button type="button" onClick={onClose} className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                        Cancel
+                    </button>
+                </div>
             </div>
-             <DatalistInput
-                label="Work By"
-                name="workBy"
-                value={formData.workBy}
-                onChange={handleChange}
-                options={workByOptions}
-            />
-            <div>
-              <label htmlFor="workOfType" className="block text-sm font-medium text-gray-700">Work Type</label>
-              <select
-                id="workOfType"
-                value={isAddingNewWorkType ? '__add_new__' : formData.workOfType}
-                onChange={handleWorkTypeSelectChange}
-                className="mt-1 p-2 border rounded-md w-full"
-              >
-                <option value="" disabled>Select a type</option>
-                {workTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                <option value="__add_new__">Add New...</option>
-              </select>
-              {isAddingNewWorkType && (
-                <input
-                  type="text"
-                  name="workOfType"
-                  value={formData.workOfType}
-                  onChange={handleChange}
-                  className="mt-2 p-2 border rounded-md w-full"
-                  placeholder="Enter new work type"
-                  required
-                  autoFocus
-                />
-              )}
-            </div>
-            <DatalistInput
-                label="Status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                options={statusOptions}
-                required
-            />
-            <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Customer Name</label>
-                <input
-                type="text"
-                name="customerName"
-                placeholder="Customer Name"
-                value={formData.customerName}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                required
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Passport Number</label>
-                <input
-                type="text"
-                name="passportNumber"
-                placeholder="Passport Number"
-                value={formData.passportNumber}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Tracking Number</label>
-                <input
-                type="text"
-                name="trackingNumber"
-                placeholder="Tracking Number"
-                value={formData.trackingNumber}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Mobile/WhatsApp Number</label>
-                <input
-                type="text"
-                name="mobileWhatsappNumber"
-                placeholder="Mobile/WhatsApp Number"
-                value={formData.mobileWhatsappNumber}
-                onChange={handleChange}
-                className="mt-1 p-2 border rounded-md w-full"
-                />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Save
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
