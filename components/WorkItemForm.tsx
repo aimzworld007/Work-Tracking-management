@@ -1,196 +1,291 @@
 import React, { useState, useEffect } from 'react';
-import { WorkItem, Status } from '../types';
-
-const ADD_NEW_VALUE = '__add_new__';
-
-interface SelectWithAddNewProps {
-    label: string;
-    name: keyof Omit<WorkItem, 'id' | 'dateOfWork' | 'dayCount' | 'notes'>;
-    value: string;
-    options: string[];
-    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-    onAddNew: (newValue: string) => void;
-    required?: boolean;
-}
-
-const SelectWithAddNew: React.FC<SelectWithAddNewProps> = ({ label, name, value, options, onChange, onAddNew, required = false }) => {
-    const [showAddNew, setShowAddNew] = useState(false);
-    const [newOptionValue, setNewOptionValue] = useState('');
-
-    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        if (e.target.value === ADD_NEW_VALUE) {
-            setShowAddNew(true);
-        } else {
-            setShowAddNew(false);
-            onChange(e);
-        }
-    };
-
-    const handleAddNew = () => {
-        if (newOptionValue.trim()) {
-            onAddNew(newOptionValue.trim());
-            // Simulate change event to select the new value
-            const syntheticEvent = {
-                target: { name, value: newOptionValue.trim() }
-            } as React.ChangeEvent<HTMLSelectElement>;
-            onChange(syntheticEvent);
-            setNewOptionValue('');
-            setShowAddNew(false);
-        }
-    };
-
-    return (
-        <div>
-            <label htmlFor={name} className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
-            <select
-                id={name}
-                name={name}
-                value={showAddNew ? ADD_NEW_VALUE : value}
-                onChange={handleSelectChange}
-                required={required}
-                className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-                <option value="" disabled>Select an option</option>
-                {options.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                ))}
-                <option value={ADD_NEW_VALUE} className="font-bold text-blue-600">
-                    + Add New...
-                </option>
-            </select>
-            {showAddNew && (
-                <div className="mt-2 flex gap-2">
-                    <input
-                        type="text"
-                        value={newOptionValue}
-                        onChange={(e) => setNewOptionValue(e.target.value)}
-                        className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={`New ${label}...`}
-                        autoFocus
-                    />
-                    <button type="button" onClick={handleAddNew} className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700">Add</button>
-                </div>
-            )}
-        </div>
-    );
-}
+import { WorkItem } from '../types';
+import { GoogleGenAI, Type } from '@google/genai';
+import { SparklesIcon } from './icons';
 
 
 interface WorkItemFormProps {
-  isOpen: boolean;
+  item: WorkItem | null;
+  onSave: (item: Omit<WorkItem, 'dayCount' | 'isArchived'>) => void;
   onClose: () => void;
-  onSave: (item: Omit<WorkItem, 'id'> & { id?: number }) => void;
-  itemToEdit: WorkItem | null;
+  workByOptions: string[];
   workTypeOptions: string[];
   statusOptions: string[];
-  workByOptions: string[];
-  onAddWorkType: (newType: string) => void;
-  onAddStatus: (newStatus: string) => void;
-  onAddWorkBy: (newWorkBy: string) => void;
 }
 
-const WorkItemForm: React.FC<WorkItemFormProps> = ({ isOpen, onClose, onSave, itemToEdit, workTypeOptions, statusOptions, workByOptions, onAddWorkType, onAddStatus, onAddWorkBy }) => {
-  const [formData, setFormData] = useState<Omit<WorkItem, 'id' | 'dateOfWork'> & {dateOfWork: string}>({
+const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, workByOptions, workTypeOptions, statusOptions }) => {
+  const [formData, setFormData] = useState({
+    id: undefined,
     dateOfWork: new Date().toISOString().split('T')[0],
     workBy: '',
     workOfType: workTypeOptions[0] || '',
-    status: statusOptions[0] as Status || '',
+    status: statusOptions[0] || '',
     customerName: '',
     trackingNumber: '',
     ppNumber: '',
     customerNumber: '',
-    dayCount: 0,
-    notes: '',
   });
 
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
   useEffect(() => {
-    if (itemToEdit) {
+    if (item) {
       setFormData({
-        ...itemToEdit,
-        dateOfWork: itemToEdit.dateOfWork.toISOString().split('T')[0],
+        id: item.id,
+        dateOfWork: item.dateOfWork,
+        workBy: item.workBy,
+        workOfType: item.workOfType,
+        status: item.status,
+        customerName: item.customerName,
+        trackingNumber: item.trackingNumber,
+        ppNumber: item.ppNumber,
+        customerNumber: item.customerNumber,
       });
     } else {
-      setFormData({
-        dateOfWork: new Date().toISOString().split('T')[0],
-        workBy: '',
-        workOfType: workTypeOptions[0] || '',
-        status: statusOptions[0] as Status || '',
-        customerName: '',
-        trackingNumber: '',
-        ppNumber: '',
-        customerNumber: '',
-        dayCount: 0,
-        notes: '',
-      });
+       // Set defaults for new item form
+       setFormData(prev => ({
+           ...prev,
+           workBy: workByOptions.includes(prev.workBy) ? prev.workBy : '',
+           workOfType: workTypeOptions[0] || '',
+           status: statusOptions[0] || '',
+       }));
     }
-  }, [itemToEdit, isOpen, workTypeOptions, statusOptions]);
+  }, [item, workTypeOptions, statusOptions]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'dayCount' ? parseInt(value, 10) || 0 : value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const itemToSave = {
-      ...formData,
-      id: itemToEdit?.id,
-      dateOfWork: new Date(formData.dateOfWork),
-    };
-    onSave(itemToSave);
+    const { id, ...dataToSave } = formData;
+    
+    const submissionData: any = { ...dataToSave };
+    if (id) {
+        submissionData.id = id;
+    }
+
+    onSave(submissionData);
   };
 
-  if (!isOpen) {
-    return null;
-  }
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Parse the following text and extract work item details. If a value is not present, leave it as an empty string. Choose from the provided options where applicable.
+            
+            Available Work Types: ${workTypeOptions.join(', ')}
+            Available Statuses: ${statusOptions.join(', ')}
+            Available 'Work By' names: ${workByOptions.join(', ')}
+
+            Text: "${aiPrompt}"
+            `,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        workBy: { type: Type.STRING },
+                        workOfType: { type: Type.STRING },
+                        status: { type: Type.STRING },
+                        customerName: { type: Type.STRING },
+                        trackingNumber: { type: Type.STRING },
+                        ppNumber: { type: Type.STRING },
+                        customerNumber: { type: Type.STRING },
+                    }
+                },
+            },
+        });
+        const resultText = response.text;
+        let parsedData;
+        try {
+            parsedData = JSON.parse(resultText);
+        } catch (e) {
+            console.error("Failed to parse AI response:", e);
+            alert("AI returned an invalid response. Please try again.");
+            return;
+        }
+
+
+        setFormData(prev => ({
+            ...prev,
+            ...parsedData,
+            workOfType: parsedData.workOfType || prev.workOfType,
+            status: parsedData.status || prev.status,
+            workBy: parsedData.workBy || prev.workBy,
+        }));
+
+    } catch (error) {
+        console.error("Error generating with AI:", error);
+        alert("Failed to generate details with AI. Please check the console for errors.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
   
-  const InputField = ({ label, name, value, onChange, type = 'text', required = false }: { label: string, name: keyof typeof formData, value: string | number, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, type?: string, required?: boolean }) => (
-    <div>
-        <label htmlFor={name} className="block mb-2 text-sm font-medium text-gray-700">{label}</label>
-        <input
-            type={type}
-            id={name}
+  // A component to handle a select dropdown that can also accept new values
+  const SelectWithAddNew = ({ label, name, value, onChange, options }: { label: string, name: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void, options: string[] }) => {
+    const [isNew, setIsNew] = useState(false);
+    const showAddNew = value === 'add_new';
+
+    useEffect(() => {
+        // if the current value is not in the options list (and not 'add_new'), it must be a custom new value
+        if (value && !options.includes(value) && value !== 'add_new') {
+            setIsNew(true);
+        } else if (value !== 'add_new') {
+            setIsNew(false);
+        }
+    }, [value, options]);
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        {isNew || showAddNew ? (
+          <input
+            type="text"
             name={name}
-            value={value}
+            value={showAddNew ? '' : value}
             onChange={onChange}
-            required={required}
-            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-    </div>
-  );
+            className="mt-1 p-2 border rounded-md w-full"
+            placeholder={`Enter new ${label.toLowerCase()}...`}
+            required
+          />
+        ) : (
+          <select name={name} value={value} onChange={onChange} className="mt-1 p-2 border rounded-md w-full">
+            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            <option value="add_new">-- Add New --</option>
+          </select>
+        )}
+      </div>
+    );
+  };
+
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white p-6 border-b z-10">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800">{itemToEdit ? 'Edit Work Item' : 'Add New Work Item'}</h2>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-3xl leading-none">&times;</button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-full overflow-y-auto">
+        <h2 className="text-2xl font-bold mb-4">{item ? 'Edit Work Item' : 'Add New Work Item'}</h2>
+        <form onSubmit={handleSubmit}>
+           <div className="mb-4 p-4 border rounded-lg bg-slate-50">
+              <label htmlFor="ai-prompt" className="block text-sm font-medium text-gray-700 mb-1">Describe with AI</label>
+              <textarea
+                  id="ai-prompt"
+                  rows={3}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="e.g., New Pakistani PP renewal for John Doe, tracking # 123, by Ainul"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+              />
+              <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2 disabled:bg-indigo-300"
+              >
+                  {isGenerating ? 'Generating...' : 'Generate Details'}
+                  <SparklesIcon />
+              </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Date of Work</label>
+                <input
+                type="date"
+                name="dateOfWork"
+                value={formData.dateOfWork}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                required
+                />
             </div>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Customer Name" name="customerName" value={formData.customerName} onChange={handleChange} required />
-            <InputField label="Customer Number" name="customerNumber" value={formData.customerNumber} onChange={handleChange} />
-
-            <SelectWithAddNew label="Type Of Work" name="workOfType" value={formData.workOfType} options={workTypeOptions} onChange={handleChange} onAddNew={onAddWorkType} required />
-            <SelectWithAddNew label="Status" name="status" value={formData.status} options={statusOptions} onChange={handleChange} onAddNew={onAddStatus} required />
-            <SelectWithAddNew label="Work By" name="workBy" value={formData.workBy} options={workByOptions} onChange={handleChange} onAddNew={onAddWorkBy} />
-
-            <InputField label="Date of Work" name="dateOfWork" value={formData.dateOfWork} onChange={handleChange} type="date" required />
-            <InputField label="Tracking Number" name="trackingNumber" value={formData.trackingNumber} onChange={handleChange} />
-            <InputField label="PP Number" name="ppNumber" value={formData.ppNumber} onChange={handleChange} />
-            <InputField label="Day Count" name="dayCount" value={formData.dayCount} onChange={handleChange} type="number" required />
+             <SelectWithAddNew
+                label="Work By"
+                name="workBy"
+                value={formData.workBy}
+                onChange={handleChange}
+                options={workByOptions}
+            />
+            <SelectWithAddNew
+                label="Work Type"
+                name="workOfType"
+                value={formData.workOfType}
+                onChange={handleChange}
+                options={workTypeOptions}
+            />
+            <SelectWithAddNew
+                label="Status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                options={statusOptions}
+            />
+            <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Customer Name</label>
+                <input
+                type="text"
+                name="customerName"
+                placeholder="Customer Name"
+                value={formData.customerName}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                required
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Tracking Number</label>
+                <input
+                type="text"
+                name="trackingNumber"
+                placeholder="Tracking Number"
+                value={formData.trackingNumber}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700">PP Number</label>
+                <input
+                type="text"
+                name="ppNumber"
+                placeholder="PP Number"
+                value={formData.ppNumber}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                />
+            </div>
+            <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Customer Number</label>
+                <input
+                type="text"
+                name="customerNumber"
+                placeholder="Customer Number"
+                value={formData.customerNumber}
+                onChange={handleChange}
+                className="mt-1 p-2 border rounded-md w-full"
+                />
+            </div>
           </div>
-
-          <div>
-             <label htmlFor="notes" className="block mb-2 text-sm font-medium text-gray-700">Notes</label>
-              <textarea id="notes" name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-          </div>
-          
-          <div className="flex justify-end pt-4 space-x-3 sticky bottom-0 bg-white py-4 border-t">
-            <button type="button" onClick={onClose} className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-            <button type="submit" className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-semibold">Save</button>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Save
+            </button>
           </div>
         </form>
       </div>

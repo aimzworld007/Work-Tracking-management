@@ -1,8 +1,10 @@
-export type Status = string;
+// Defines the possible statuses for a work item.
+export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | string;
 
+// Defines the structure of a work item.
 export interface WorkItem {
-  id: number;
-  dateOfWork: Date;
+  id?: string; // ID is now optional and will be a string from Firestore
+  dateOfWork: string; // Storing date as a string in 'YYYY-MM-DD' format
   workBy: string;
   workOfType: string;
   status: Status;
@@ -11,5 +13,5 @@ export interface WorkItem {
   ppNumber: string;
   customerNumber: string;
   dayCount: number;
-  notes?: string;
+  isArchived: boolean;
 }
