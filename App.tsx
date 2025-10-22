@@ -162,13 +162,12 @@ const App: React.FC = () => {
   const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'> & { id?: string }) => {
     try {
       if (itemToSave.id) {
-        // Edit
-        // FIX: Use Firebase v8 compact syntax for document reference and update
-        const docRef = db.collection("work-items").doc(itemToSave.id);
-        await docRef.update({ ...itemToSave });
+        // Edit: Destructure id and pass the rest of the data to update.
+        const { id, ...dataToUpdate } = itemToSave;
+        const docRef = db.collection("work-items").doc(id);
+        await docRef.update(dataToUpdate);
       } else {
         // Add
-        // FIX: Use Firebase v8 compact syntax for add
         await db.collection("work-items").add({ 
           ...itemToSave,
           isArchived: false,
