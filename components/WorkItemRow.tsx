@@ -9,7 +9,7 @@ interface WorkItemRowProps {
   onToggleSelection: (id: string) => void;
   onEdit: () => void;
   onDelete: () => void;
-  onArchive: () => void;
+  onArchive: () => Promise<void>;
   onUnarchive: () => void;
   onStatusChange: (id: string, status: string) => Promise<void>;
   statusOptions: string[];
@@ -50,7 +50,9 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
   const [isSaving, setIsSaving] = useState(false);
   
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
     const date = new Date(`${dateStr}T00:00:00`);
+    if (isNaN(date.getTime())) return 'Invalid Date';
     return date.toLocaleDateString('en-CA', {
       year: 'numeric',
       month: '2-digit',
@@ -62,6 +64,16 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
   
   const handleStatusUpdate = async (newStatus: string) => {
     setIsEditingStatus(false);
+    if (newStatus === 'Archive') {
+        setIsSaving(true);
+        try {
+            await onArchive();
+        } finally {
+            setIsSaving(false);
+        }
+        return;
+    }
+
     if (newStatus !== item.status) {
       setIsSaving(true);
       try {
@@ -99,6 +111,12 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
             className="block w-full max-w-[170px] rounded-md border-0 bg-white dark:bg-slate-900 py-1 pl-2 pr-7 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-xs sm:leading-5"
           >
             {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            {(item.status === 'Approved' || item.status === 'Rejected') && (
+                <>
+                    <option disabled>──────────</option>
+                    <option value="Archive">Archive Item</option>
+                </>
+            )}
           </select>
         ) : (
           <button
@@ -143,7 +161,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
                 <button onClick={onDelete} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
                     <DeleteIcon className="h-4 w-4" />
                 </button>
-                {item.status === 'Approved' && (
+                {(item.status === 'Approved' || item.status === 'Rejected') && (
                      <button onClick={onArchive} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
                         <ArchiveIcon className="h-4 w-4" />
                     </button>
