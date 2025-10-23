@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import StatusBadge from './StatusBadge';
-import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon } from './icons';
+import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon } from './icons';
 
 interface WorkItemRowProps {
   item: WorkItem;
@@ -135,6 +135,21 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
   };
 
   const trackingLink = getTrackingLink(item.workOfType);
+  
+  const generateWhatsAppLink = () => {
+    if (!item.mobileWhatsappNumber) return null;
+
+    const cleanedNumber = item.mobileWhatsappNumber.replace(/\D/g, '');
+    if (!cleanedNumber) return null;
+
+    const message = `${item.workOfType} ${item.status}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    return `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
+  };
+
+  const whatsAppLink = generateWhatsAppLink();
+
 
   return (
     <tr 
@@ -192,8 +207,22 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
                     </div>
                 )}
                 {item.mobileWhatsappNumber && (
-                    <div>
-                        <span className="font-semibold text-slate-600 dark:text-slate-300">M/W:</span> {item.mobileWhatsappNumber}
+                    <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">M/W:</span>
+                        {whatsAppLink ? (
+                           <a
+                                href={whatsAppLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group inline-flex items-center gap-1 text-green-600 hover:underline dark:text-green-500"
+                                title="Open WhatsApp chat"
+                            >
+                                <WhatsAppIcon className="h-3.5 w-3.5" />
+                                <span>{item.mobileWhatsappNumber}</span>
+                            </a>
+                        ) : (
+                             <span>{item.mobileWhatsappNumber}</span>
+                        )}
                     </div>
                 )}
             </div>
