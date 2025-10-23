@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -502,12 +503,12 @@ const App: React.FC = () => {
   const headerButtonBase = 'text-white rounded-md px-2.5 py-1.5 font-medium text-xs sm:text-sm transition-all duration-150 shadow-sm focus:outline-none inline-flex items-center gap-1';
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans">
+    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans flex flex-col">
       <div className="hidden print:block text-center pt-4 mb-4">
         <h1 className="text-xl font-bold text-black">Work Items Report</h1>
         <p className="text-sm text-slate-600">{currentDate}</p>
       </div>
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex-grow">
         {selectedItems.length > 0 && isSelectionMode ? (
           <BulkActionToolbar
             selectedCount={selectedItems.length}
@@ -700,6 +701,9 @@ const App: React.FC = () => {
 
         <Fab onClick={() => handleOpenModal()} />
       </div>
+       <footer className="text-center py-4 px-4 text-sm text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
+        MADE WITH ❤️ BY <a href="http://ainulislam.info" target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">"Ainul islam"</a>
+      </footer>
     </div>
   );
 };
