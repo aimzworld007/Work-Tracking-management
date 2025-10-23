@@ -1,16 +1,12 @@
+
 import React from 'react';
 import { AddIcon } from './icons';
 
 interface FabProps {
   onClick: () => void;
-  isVisible: boolean;
 }
 
-const Fab: React.FC<FabProps> = ({ onClick, isVisible }) => {
-  if (!isVisible) {
-    return null;
-  }
-
+const Fab: React.FC<FabProps> = ({ onClick }) => {
   return (
     <button
       type="button"

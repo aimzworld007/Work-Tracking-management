@@ -16,6 +16,15 @@ import EditModeToggle from './components/EditModeToggle';
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
 
+const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string } } = {
+  'All Items':        { base: 'bg-slate-500 hover:bg-slate-600', active: 'bg-slate-700 ring-slate-500', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
+  'UNDER PROCESSING': { base: 'bg-blue-500 hover:bg-blue-600',   active: 'bg-blue-700 ring-blue-500',   badge: 'bg-blue-200 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' },
+  'Approved':         { base: 'bg-green-500 hover:bg-green-600', active: 'bg-green-700 ring-green-500', badge: 'bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-200' },
+  'Rejected':         { base: 'bg-red-500 hover:bg-red-600',     active: 'bg-red-700 ring-red-500',     badge: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200' },
+  'Waiting Delivery': { base: 'bg-purple-500 hover:bg-purple-600',active: 'bg-purple-700 ring-purple-500',badge: 'bg-purple-200 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' },
+  'Archived':         { base: 'bg-gray-500 hover:bg-gray-600',  active: 'bg-gray-700 ring-gray-500',   badge: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+};
+
 const App: React.FC = () => {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
@@ -469,7 +478,7 @@ const App: React.FC = () => {
             isEditMode={isEditMode}
           />
         ) : (
-          <div className="mb-8">
+          <div className="mb-8 p-4 bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="relative w-full sm:w-auto">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -519,26 +528,34 @@ const App: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
             <div className="border-b border-slate-200 dark:border-slate-800">
-                <nav className="-mb-px flex gap-x-1 sm:gap-x-4 overflow-x-auto px-4">
-                    {TABS.map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => {
-                                setActiveTab(tab);
-                                setSelectedItems([]);
-                            }}
-                            className={`${
-                                activeTab === tab
-                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
-                            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
-                        >
-                            {tab}
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
-                                {getTabCount(tab)}
-                            </span>
-                        </button>
-                    ))}
+                <nav className="flex gap-x-2 overflow-x-auto p-2">
+                    {TABS.map(tab => {
+                        const colorConfig = TAB_COLORS[tab] || TAB_COLORS['All Items'];
+                        const isActive = activeTab === tab;
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => {
+                                    setActiveTab(tab);
+                                    setSelectedItems([]);
+                                }}
+                                className={`${
+                                    isActive
+                                    ? `${colorConfig.active} ring-2 ring-offset-2 dark:ring-offset-slate-900`
+                                    : colorConfig.base
+                                } text-white whitespace-nowrap rounded-md px-3 py-1.5 font-medium text-sm flex items-center gap-2 transition-all duration-150 shadow-sm focus:outline-none`}
+                            >
+                                {tab}
+                                <span className={`min-w-[24px] inline-block text-center px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${
+                                    isActive 
+                                    ? 'bg-white/30 text-white' 
+                                    : colorConfig.badge
+                                }`}>
+                                    {getTabCount(tab)}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </nav>
             </div>
             <div className="overflow-x-auto">
@@ -623,7 +640,7 @@ const App: React.FC = () => {
             />
         )}
 
-        <Fab onClick={() => handleOpenModal()} isVisible={isEditMode} />
+        <Fab onClick={() => handleOpenModal()} />
       </div>
     </div>
   );

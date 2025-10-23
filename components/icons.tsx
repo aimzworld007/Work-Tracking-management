@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 // Utility component to handle SVG props
@@ -75,4 +76,12 @@ export const PrintIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 export const ExternalLinkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></Icon>
+);
+
+export const LockClosedIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></Icon>
+);
+
+export const LockOpenIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9 10.5V6.75a4.5 4.5 0 119 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></Icon>
 );
