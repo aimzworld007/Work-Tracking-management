@@ -11,6 +11,7 @@ import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INI
 import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
 import EditModeToggle from './components/EditModeToggle';
+import FontSizeAdjuster from './components/FontSizeAdjuster';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -62,6 +63,17 @@ const App: React.FC = () => {
   });
   
   const [currentDate, setCurrentDate] = useState('');
+  
+  const [fontSize, setFontSize] = useState<number>(() => {
+    const savedSize = localStorage.getItem('fontSize');
+    return savedSize ? parseInt(savedSize, 10) : 16; // Default to 16px
+  });
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+    localStorage.setItem('fontSize', fontSize.toString());
+  }, [fontSize]);
+
 
   useEffect(() => {
     const today = new Date();
@@ -456,6 +468,18 @@ const App: React.FC = () => {
     });
   };
   
+  const handleDecreaseFontSize = () => {
+    setFontSize(prevSize => Math.max(12, prevSize - 1)); // min 12px
+  };
+
+  const handleIncreaseFontSize = () => {
+    setFontSize(prevSize => Math.min(22, prevSize + 1)); // max 22px
+  };
+
+  const handleResetFontSize = () => {
+    setFontSize(16); // reset to default 16px
+  };
+
   const SortableHeader = ({ column, title, thClassName = 'px-3', buttonClassName = '' }: { column: keyof WorkItem, title: string, thClassName?: string, buttonClassName?: string }) => {
     const isSorting = sortColumn === column;
     const Icon = isSorting ? (sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon) : ChevronUpDownIcon;
@@ -520,6 +544,11 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                    <FontSizeAdjuster 
+                        onDecrease={handleDecreaseFontSize}
+                        onIncrease={handleIncreaseFontSize}
+                        onReset={handleResetFontSize}
+                    />
                     <button
                         type="button"
                         onClick={handleToggleSelectionMode}
