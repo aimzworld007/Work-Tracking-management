@@ -456,13 +456,16 @@ const App: React.FC = () => {
     });
   };
   
-  const SortableHeader = ({ column, title, className = '' }: { column: keyof WorkItem, title: string, className?: string }) => {
+  const SortableHeader = ({ column, title, thClassName = 'px-3', buttonClassName = '' }: { column: keyof WorkItem, title: string, thClassName?: string, buttonClassName?: string }) => {
     const isSorting = sortColumn === column;
     const Icon = isSorting ? (sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon) : ChevronUpDownIcon;
+    
+    const defaultButtonClasses = "group inline-flex items-center gap-1";
+    const finalButtonClasses = buttonClassName ? `${buttonClassName}` : defaultButtonClasses;
 
     return (
-      <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 ${className}`}>
-        <button onClick={() => handleSort(column)} className="group inline-flex items-center gap-1">
+      <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 ${thClassName}`}>
+        <button onClick={() => handleSort(column)} className={finalButtonClasses}>
           {title}
           <span className={`transition-opacity ${isSorting ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'}`}>
             <Icon className="h-4 w-4" />
@@ -471,6 +474,8 @@ const App: React.FC = () => {
       </th>
     );
   };
+
+  const headerButtonBase = 'text-white rounded-md px-2.5 py-1.5 font-medium text-xs sm:text-sm transition-all duration-150 shadow-sm focus:outline-none inline-flex items-center gap-1';
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans">
@@ -504,13 +509,13 @@ const App: React.FC = () => {
                           onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
-                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:block whitespace-nowrap mt-2">
+                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 md:block whitespace-nowrap mt-2">
                       {currentDate}
                     </p>
                   </div>
                   
                   <div className="text-center order-first sm:order-none">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Work Management Dashboard</h1>
+                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-500 via-amber-400 to-emerald-500 bg-clip-text text-transparent">Work Management Dashboard</h1>
                     <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
                   </div>
 
@@ -593,13 +598,13 @@ const App: React.FC = () => {
                             />
                         </th>
                     )}
-                    <SortableHeader column="dateOfWork" title="Date" className="px-3" />
-                    <SortableHeader column="workBy" title="Work By" className="px-3" />
-                    <SortableHeader column="workOfType" title="Work Type" className="px-3" />
-                    <SortableHeader column="status" title="Status" className="px-3" />
-                    <SortableHeader column="customerName" title="Customer Details" className="px-3" />
-                    <SortableHeader column="trackingNumber" title="Tracking Details" className="px-3" />
-                    <SortableHeader column="dayCount" title="Days Passed" className="px-3" />
+                    <SortableHeader column="dateOfWork" title="Date" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-sky-500 hover:bg-sky-600`} />
+                    <SortableHeader column="workBy" title="Work By" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-teal-500 hover:bg-teal-600`} />
+                    <SortableHeader column="workOfType" title="Work Type" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-fuchsia-500 hover:bg-fuchsia-600`} />
+                    <SortableHeader column="status" title="Status" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-orange-500 hover:bg-orange-600`} />
+                    <SortableHeader column="customerName" title="Customer Details" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-amber-500 hover:bg-amber-600`} />
+                    <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-violet-500 hover:bg-violet-600`} />
+                    <SortableHeader column="dayCount" title="Days Passed" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-lime-500 hover:bg-lime-600`} />
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right">
                         <span className="sr-only">Actions</span>
                     </th>
