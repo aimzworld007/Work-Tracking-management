@@ -304,12 +304,10 @@ const App: React.FC = () => {
 
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-        try {
-          await db.collection("work-items").doc(id).delete();
-        } catch (error) {
-          console.error("Error deleting document: ", error);
-        }
+    try {
+      await db.collection("work-items").doc(id).delete();
+    } catch (error) {
+      console.error("Error deleting document: ", error);
     }
   };
   

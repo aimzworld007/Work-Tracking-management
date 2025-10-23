@@ -80,11 +80,13 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
   const handleStatusUpdate = async (newStatus: string) => {
     setIsEditingStatus(false);
     if (newStatus === 'Archive') {
-        setIsSaving(true);
-        try {
-            await onArchive();
-        } finally {
-            setIsSaving(false);
+        if (window.confirm('Are you sure you want to archive this item?')) {
+            setIsSaving(true);
+            try {
+                await onArchive();
+            } finally {
+                setIsSaving(false);
+            }
         }
         return;
     }
@@ -96,6 +98,24 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
       } finally {
         setIsSaving(false);
       }
+    }
+  };
+
+  const handleDeleteClick = () => {
+    if (window.confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+        onDelete();
+    }
+  };
+  
+  const handleArchiveClick = () => {
+    if (window.confirm('Are you sure you want to archive this item?')) {
+        onArchive();
+    }
+  };
+
+  const handleUnarchiveClick = () => {
+    if (window.confirm('Are you sure you want to unarchive this item?')) {
+        onUnarchive();
     }
   };
 
@@ -188,21 +208,21 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
                 <button onClick={onEdit} className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md transition-colors" title="Edit">
                     <EditIcon className="h-4 w-4" />
                 </button>
-                <button onClick={onDelete} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
                     <DeleteIcon className="h-4 w-4" />
                 </button>
                 {(item.status === 'Approved' || item.status === 'Rejected') && (
-                     <button onClick={onArchive} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
+                     <button onClick={handleArchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
                         <ArchiveIcon className="h-4 w-4" />
                     </button>
                 )}
               </>
             ) : (
                 <>
-                    <button onClick={onUnarchive} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
+                    <button onClick={handleUnarchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
                         <UnarchiveIcon className="h-4 w-4" />
                     </button>
-                    <button onClick={onDelete} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                    <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
                         <DeleteIcon className="h-4 w-4" />
                     </button>
                 </>
