@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -43,6 +44,19 @@ const App: React.FC = () => {
     }
     return 'light';
   });
+  
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    setCurrentDate(formattedDate);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -460,7 +474,10 @@ const App: React.FC = () => {
                     <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+                  <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:block whitespace-nowrap">
+                      {currentDate}
+                    </p>
                     <button
                       type="button"
                       onClick={handleOpenImportModal}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WorkItem } from '../types';
 import StatusBadge from './StatusBadge';
-import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon } from './icons';
+import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon } from './icons';
 
 interface WorkItemRowProps {
   item: WorkItem;
@@ -44,6 +44,21 @@ const getWorkTypeColorClass = (workType: string): string => {
   return COLORS[hash % COLORS.length];
 };
 
+const getTrackingLink = (workType: string): string | null => {
+  const dubaiPoliceTypes = ['Lost PP Certificate', 'Police Clearance'];
+  const mohreTypes = ['withdraw absconding', 'work permit', 'labor cancel', 'Mohare est update'];
+
+  if (dubaiPoliceTypes.includes(workType)) {
+    return 'https://www.dubaipolice.gov.ae/wps/portal/home/hidden/verifyidentity';
+  }
+
+  if (mohreTypes.includes(workType)) {
+    return 'https://inquiry.mohre.gov.ae';
+  }
+
+  return null;
+};
+
 
 const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
@@ -83,6 +98,8 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
       }
     }
   };
+
+  const trackingLink = getTrackingLink(item.workOfType);
 
   return (
     <tr 
@@ -148,7 +165,20 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
         )}
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
-        {item.trackingNumber}
+        {trackingLink && item.trackingNumber ? (
+            <a
+                href={trackingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
+                title="Open verification website in a new tab"
+            >
+                <span>{item.trackingNumber}</span>
+                <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+            </a>
+        ) : (
+            item.trackingNumber
+        )}
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-center font-semibold text-slate-700 dark:text-slate-300">{item.dayCount}</td>
       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
