@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -369,6 +368,7 @@ const App: React.FC = () => {
   };
 
   const handleBulkPrint = () => {
+    document.body.classList.add('bulk-print-active');
     const selectedIdsSet = new Set(selectedItems);
     document.querySelectorAll('tbody tr[data-item-id]').forEach(row => {
       const rowId = row.getAttribute('data-item-id');
@@ -378,6 +378,7 @@ const App: React.FC = () => {
     });
 
     const cleanup = () => {
+      document.body.classList.remove('bulk-print-active');
       document.querySelectorAll('.print-selected').forEach(row => {
         row.classList.remove('print-selected');
       });
@@ -442,6 +443,10 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans">
+      <div className="hidden print:block text-center pt-4 mb-4">
+        <h1 className="text-xl font-bold text-black">Work Items Report</h1>
+        <p className="text-sm text-slate-600">{currentDate}</p>
+      </div>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         {selectedItems.length > 0 ? (
           <BulkActionToolbar

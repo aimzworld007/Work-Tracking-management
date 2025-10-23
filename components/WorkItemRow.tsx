@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import StatusBadge from './StatusBadge';
 import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon } from './icons';
@@ -63,7 +63,16 @@ const getTrackingLink = (workType: string): string | null => {
 const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    // When the canonical status from props changes, it means our optimistic update
+    // has been confirmed and persisted. We can clear the optimistic state.
+    setOptimisticStatus(null);
+  }, [item.status]);
   
+  const displayStatus = optimisticStatus || item.status;
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
     const date = new Date(`${dateStr}T00:00:00`);
@@ -93,8 +102,13 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
 
     if (newStatus !== item.status) {
       setIsSaving(true);
+      setOptimisticStatus(newStatus);
       try {
         await onStatusChange(item.id!, newStatus);
+      } catch (error) {
+        console.error("Failed to update status:", error);
+        alert("Failed to update status. Reverting change.");
+        setOptimisticStatus(null); // Revert on failure
       } finally {
         setIsSaving(false);
       }
@@ -141,7 +155,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
         {isEditingStatus ? (
           <select
-            value={item.status}
+            value={displayStatus}
             onChange={(e) => handleStatusUpdate(e.target.value)}
             onBlur={() => setIsEditingStatus(false)}
             autoFocus
@@ -157,12 +171,12 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
           </select>
         ) : (
           <button
-            onClick={() => setIsEditingStatus(true)}
+            onClick={() => !isSaving && setIsEditingStatus(true)}
             disabled={isSaving}
             className="group w-full flex items-center text-left rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:cursor-wait"
             title="Click to change status"
           >
-            <StatusBadge status={item.status} />
+            <StatusBadge status={displayStatus} />
             {isSaving && <span className="text-xs ml-2 animate-pulse text-slate-500 dark:text-slate-400">Saving...</span>}
           </button>
         )}
