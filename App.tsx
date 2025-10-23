@@ -479,26 +479,24 @@ const App: React.FC = () => {
     setFontSize(16); // reset to default 16px
   };
 
-  const SortableHeader = ({ column, title, thClassName = 'px-3', buttonClassName = '' }: { column: keyof WorkItem, title: string, thClassName?: string, buttonClassName?: string }) => {
+  const SortableHeader = ({ column, title, thClassName = '' }: { column: keyof WorkItem, title: string, thClassName?: string }) => {
     const isSorting = sortColumn === column;
     const Icon = isSorting ? (sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon) : ChevronUpDownIcon;
-    
-    const defaultButtonClasses = "group inline-flex items-center gap-1";
-    const finalButtonClasses = buttonClassName ? `${buttonClassName}` : defaultButtonClasses;
 
     return (
-      <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-200 ${thClassName}`}>
-        <button onClick={() => handleSort(column)} className={finalButtonClasses}>
-          {title}
-          <span className={`transition-opacity ${isSorting ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'}`}>
+      <th scope="col" className={`py-0 text-left text-sm font-semibold text-white transition-colors duration-200 ${thClassName}`}>
+        <button
+          onClick={() => handleSort(column)}
+          className="group w-full h-full flex items-center justify-start gap-1 px-3 py-3.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-inset"
+        >
+          <span>{title}</span>
+          <span className={`transition-opacity ${isSorting ? 'opacity-100' : 'opacity-50 group-hover:opacity-100'}`}>
             <Icon className="h-4 w-4" />
           </span>
         </button>
       </th>
     );
   };
-
-  const headerButtonBase = 'text-white rounded-md px-2.5 py-1.5 font-medium text-xs sm:text-sm transition-all duration-150 shadow-sm focus:outline-none inline-flex items-center gap-1';
 
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans flex flex-col">
@@ -561,7 +559,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
+        <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10 overflow-hidden">
             <div className="border-b border-slate-200 dark:border-slate-800">
                 <nav className="flex gap-x-2 overflow-x-auto p-2">
                     {TABS.map(tab => {
@@ -595,10 +593,10 @@ const App: React.FC = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                <thead>
                   <tr>
                     {isSelectionMode && (
-                        <th scope="col" className="relative px-7 sm:w-12 sm:px-6">
+                        <th scope="col" className="relative px-7 sm:w-12 sm:px-6 bg-slate-50 dark:bg-slate-800/50">
                             <input
                                 type="checkbox"
                                 className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
@@ -607,14 +605,14 @@ const App: React.FC = () => {
                             />
                         </th>
                     )}
-                    <SortableHeader column="dateOfWork" title="Date" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-sky-500 hover:bg-sky-600`} />
-                    <SortableHeader column="workBy" title="Work By" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-teal-500 hover:bg-teal-600`} />
-                    <SortableHeader column="workOfType" title="Work Type" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-fuchsia-500 hover:bg-fuchsia-600`} />
-                    <SortableHeader column="status" title="Status" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-orange-500 hover:bg-orange-600`} />
-                    <SortableHeader column="customerName" title="Customer Details" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-amber-500 hover:bg-amber-600`} />
-                    <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-violet-500 hover:bg-violet-600`} />
-                    <SortableHeader column="dayCount" title="Days Passed" thClassName="px-2" buttonClassName={`${headerButtonBase} bg-lime-500 hover:bg-lime-600`} />
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right">
+                    <SortableHeader column="dateOfWork" title="Date" thClassName="bg-sky-500 hover:bg-sky-600" />
+                    <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
+                    <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
+                    <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
+                    <SortableHeader column="customerName" title="Customer Details" thClassName="bg-amber-500 hover:bg-amber-600" />
+                    <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="bg-violet-500 hover:bg-violet-600" />
+                    <SortableHeader column="dayCount" title="Days Passed" thClassName="bg-lime-500 hover:bg-lime-600" />
+                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
                         <span className="sr-only">Actions</span>
                     </th>
                   </tr>
