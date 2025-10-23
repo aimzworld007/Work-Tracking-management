@@ -519,22 +519,19 @@ const App: React.FC = () => {
         ) : (
           <div className="mb-8 p-4 bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="w-full sm:w-auto">
-                    <div className="relative flex-grow sm:flex-grow-0">
+                  <div className="w-full sm:flex-1">
+                    <div className="relative w-full sm:max-w-xs">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                             <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                         </div>
                         <input
                           type="text"
                           placeholder="Search tasks..."
-                          className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                          className="block w-full rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
                           value={searchTerm}
                           onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
-                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 md:block whitespace-nowrap mt-2">
-                      {currentDate}
-                    </p>
                   </div>
                   
                   <div className="text-center order-first sm:order-none">
@@ -542,7 +539,10 @@ const App: React.FC = () => {
                     <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Track and manage all your work items efficiently.</p>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
+                  <div className="flex items-center justify-end gap-3 w-full sm:flex-1">
+                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden sm:block whitespace-nowrap">
+                      {currentDate}
+                    </p>
                      <HeaderActions
                         isEditMode={isEditMode}
                         onToggleEditMode={() => setIsEditMode(prev => !prev)}
