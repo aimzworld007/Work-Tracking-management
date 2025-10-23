@@ -16,7 +16,6 @@ export const WORK_TYPE_OPTIONS = [
   'labor cancel',
   'NUMBER UPDATE',
   'Issue visa',
-  'others',
 ];
 
 export const INITIAL_STATUS_OPTIONS: string[] = [

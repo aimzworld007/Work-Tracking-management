@@ -43,16 +43,20 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     id: undefined,
     dateOfWork: new Date().toISOString().split('T')[0],
     workBy: '',
-    workOfType: workTypeOptions[0] || '',
+    workOfType: '',
     status: statusOptions[0] || '',
     customerName: '',
     passportNumber: '',
     trackingNumber: '',
     mobileWhatsappNumber: '',
   });
+  
+  const [isCustomWorkType, setIsCustomWorkType] = useState(false);
 
   useEffect(() => {
     if (item) {
+      const isCustom = !workTypeOptions.includes(item.workOfType) && item.workOfType !== '';
+      setIsCustomWorkType(isCustom);
       setFormData({
         id: item.id,
         dateOfWork: item.dateOfWork,
@@ -65,27 +69,44 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         mobileWhatsappNumber: item.mobileWhatsappNumber,
       });
     } else {
-       setFormData(prev => ({
-           ...prev,
+       setIsCustomWorkType(false);
+       setFormData({
+           id: undefined,
            dateOfWork: new Date().toISOString().split('T')[0],
            workBy: '',
+           workOfType: '',
+           status: statusOptions[0] || '',
            customerName: '',
            passportNumber: '',
            trackingNumber: '',
            mobileWhatsappNumber: '',
-           workOfType: workTypeOptions[0] || '',
-           status: statusOptions[0] || '',
-       }));
+       });
     }
-  }, [item, workByOptions, workTypeOptions, statusOptions]);
+  }, [item, workTypeOptions, statusOptions]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
+  const handleWorkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const { value } = e.target;
+      if (value === '__custom__') {
+          setIsCustomWorkType(true);
+          setFormData(prev => ({ ...prev, workOfType: '' }));
+      } else {
+          setIsCustomWorkType(false);
+          setFormData(prev => ({ ...prev, workOfType: value }));
+      }
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.workOfType) {
+        alert('Work Type is a required field.');
+        return;
+    }
+    
     const { id, ...dataToSave } = formData;
     
     const submissionData: any = { ...dataToSave };
@@ -121,7 +142,38 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                             onChange={(date) => setFormData(prev => ({ ...prev, dateOfWork: date }))}
                                         />
                                         <DatalistInput label="Work By" name="workBy" value={formData.workBy} onChange={handleChange} options={workByOptions} />
-                                        <DatalistInput label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleChange} options={workTypeOptions} required />
+                                        
+                                        <div>
+                                            <label htmlFor="workOfTypeSelect" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Work Type</label>
+                                            <div className="mt-2">
+                                                <select
+                                                    id="workOfTypeSelect"
+                                                    value={isCustomWorkType ? '__custom__' : formData.workOfType}
+                                                    onChange={handleWorkTypeChange}
+                                                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                                >
+                                                    <option value="" disabled>Select a type...</option>
+                                                    {workTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    <option value="__custom__">Other (specify)</option>
+                                                </select>
+                                            </div>
+                                            {isCustomWorkType && (
+                                                <div className="mt-2">
+                                                    <label htmlFor="workOfType" className="sr-only">Custom Work Type</label>
+                                                    <input
+                                                        type="text"
+                                                        id="workOfType"
+                                                        name="workOfType"
+                                                        value={formData.workOfType}
+                                                        onChange={handleChange}
+                                                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                                        placeholder="Enter custom work type"
+                                                        required
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
                                         <div className="md:col-span-2">
                                             <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Customer Name</label>
