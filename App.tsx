@@ -5,14 +5,12 @@ import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
-import ThemeToggle from './components/ThemeToggle';
-import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon, PrintIcon, ClipboardDocumentCheckIcon } from './components/icons';
+import HeaderActions from './components/HeaderActions';
+import { SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
-import EditModeToggle from './components/EditModeToggle';
-import FontSizeAdjuster from './components/FontSizeAdjuster';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -545,38 +543,19 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
-                    <FontSizeAdjuster 
-                        onDecrease={handleDecreaseFontSize}
-                        onIncrease={handleIncreaseFontSize}
-                        onReset={handleResetFontSize}
-                    />
-                    <button
-                        type="button"
-                        onClick={handleToggleSelectionMode}
-                        className={`inline-flex items-center justify-center h-10 w-10 rounded-md shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 ${isSelectionMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
-                        title={isSelectionMode ? 'Hide Selection' : 'Show Selection'}
-                    >
-                        <ClipboardDocumentCheckIcon className="h-5 w-5" />
-                    </button>
-                    <EditModeToggle isEditMode={isEditMode} onToggle={() => setIsEditMode(prev => !prev)} />
-                    <button
-                      type="button"
-                      onClick={handleOpenImportModal}
-                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                      disabled={!isEditMode}
-                    >
-                      <ImportIcon className="-ml-0.5 h-5 w-5" />
-                      Import
-                    </button>
-                     <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-                    >
-                      <PrintIcon className="-ml-0.5 h-5 w-5" />
-                      Print
-                    </button>
-                    <ThemeToggle theme={theme} setTheme={setTheme} />
+                     <HeaderActions
+                        isEditMode={isEditMode}
+                        onToggleEditMode={() => setIsEditMode(prev => !prev)}
+                        isSelectionMode={isSelectionMode}
+                        onToggleSelectionMode={handleToggleSelectionMode}
+                        theme={theme}
+                        onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                        onImport={handleOpenImportModal}
+                        onPrint={() => window.print()}
+                        onDecreaseFontSize={handleDecreaseFontSize}
+                        onIncreaseFontSize={handleIncreaseFontSize}
+                        onResetFontSize={handleResetFontSize}
+                      />
                   </div>
               </div>
           </div>
