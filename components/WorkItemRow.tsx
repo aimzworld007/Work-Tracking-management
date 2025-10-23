@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import StatusBadge from './StatusBadge';
-import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon } from './icons';
+import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon, CopyIcon, CheckIcon } from './icons';
 
 interface WorkItemRowProps {
   item: WorkItem;
   isSelected: boolean;
+  isSelectionMode: boolean;
   onToggleSelection: (id: string) => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -61,10 +63,11 @@ const getTrackingLink = (workType: string): string | null => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     // When the canonical status from props changes, it means our optimistic update
@@ -78,10 +81,10 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
     if (!dateStr) return 'N/A';
     const date = new Date(`${dateStr}T00:00:00`);
     if (isNaN(date.getTime())) return 'Invalid Date';
-    return date.toLocaleDateString('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
+    return date.toLocaleDateString('en-GB', {
       day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
     });
   };
   
@@ -134,6 +137,17 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
     }
   };
 
+  const handleCopy = () => {
+    if (!item.trackingNumber) return;
+    navigator.clipboard.writeText(item.trackingNumber).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+    }).catch(err => {
+        console.error("Failed to copy tracking number: ", err);
+        alert("Could not copy text to clipboard.");
+    });
+  };
+
   const trackingLink = getTrackingLink(item.workOfType);
   
   const generateWhatsAppLink = () => {
@@ -142,7 +156,8 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
     const cleanedNumber = item.mobileWhatsappNumber.replace(/\D/g, '');
     if (!cleanedNumber) return null;
 
-    const message = `${item.workOfType} ${item.status}`;
+    const formattedDate = formatDate(item.dateOfWork);
+    const message = `dear, ${item.customerName}, on ${formattedDate} your ${item.workOfType} is ${item.status}.`;
     const encodedMessage = encodeURIComponent(message);
     
     return `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
@@ -156,15 +171,17 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
         data-item-id={item.id}
         className={`${isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'} hover:bg-indigo-50/20 dark:hover:bg-slate-800 transition-colors duration-150 border-l-4 ${colorClass}`}
     >
-      <td className="relative px-7 sm:w-12 sm:px-6">
-        <input
-            type="checkbox"
-            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
-            checked={isSelected}
-            onChange={() => onToggleSelection(item.id!)}
-            aria-label={`Select item ${item.customerName}`}
-        />
-      </td>
+      {isSelectionMode && (
+        <td className="relative px-7 sm:w-12 sm:px-6">
+            <input
+                type="checkbox"
+                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
+                checked={isSelected}
+                onChange={() => onToggleSelection(item.id!)}
+                aria-label={`Select item ${item.customerName}`}
+            />
+        </td>
+      )}
       <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">{formatDate(item.dateOfWork)}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workBy}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workOfType}</td>
@@ -228,21 +245,37 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
             </div>
         )}
       </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
-        {trackingLink && item.trackingNumber ? (
-            <a
-                href={trackingLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
-                title="Open verification website in a new tab"
-            >
+      <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-2">
+            {trackingLink && item.trackingNumber ? (
+                <a
+                    href={trackingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
+                    title="Open verification website in a new tab"
+                >
+                    <span>{item.trackingNumber}</span>
+                    <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                </a>
+            ) : (
                 <span>{item.trackingNumber}</span>
-                <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
-            </a>
-        ) : (
-            item.trackingNumber
-        )}
+            )}
+            {item.trackingNumber && (
+                <button
+                    onClick={handleCopy}
+                    disabled={isCopied}
+                    className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    title={isCopied ? 'Copied!' : 'Copy tracking number'}
+                >
+                    {isCopied ? (
+                        <CheckIcon className="h-4 w-4 text-green-500" />
+                    ) : (
+                        <CopyIcon className="h-4 w-4" />
+                    )}
+                </button>
+            )}
+        </div>
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-center font-semibold text-slate-700 dark:text-slate-300">{item.dayCount}</td>
       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">

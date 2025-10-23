@@ -79,7 +79,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            customerName: '',
            passportNumber: '',
            trackingNumber: '',
-           mobileWhatsappNumber: '',
+           mobileWhatsappNumber: '971',
        });
     }
   }, [item, workTypeOptions, statusOptions]);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -6,7 +5,7 @@ import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
 import ThemeToggle from './components/ThemeToggle';
-import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon, PrintIcon } from './components/icons';
+import { ImportIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon, PrintIcon, ClipboardDocumentCheckIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 import BulkActionToolbar from './components/BulkActionToolbar';
@@ -49,6 +48,8 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('isEditMode');
     return saved !== null ? JSON.parse(saved) : false;
   });
+
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
@@ -444,6 +445,16 @@ const App: React.FC = () => {
         setSortDirection('asc');
       }
   };
+
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode(prev => {
+        const newState = !prev;
+        if (!newState) {
+            setSelectedItems([]);
+        }
+        return newState;
+    });
+  };
   
   const SortableHeader = ({ column, title, className = '' }: { column: keyof WorkItem, title: string, className?: string }) => {
     const isSorting = sortColumn === column;
@@ -468,7 +479,7 @@ const App: React.FC = () => {
         <p className="text-sm text-slate-600">{currentDate}</p>
       </div>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        {selectedItems.length > 0 ? (
+        {selectedItems.length > 0 && isSelectionMode ? (
           <BulkActionToolbar
             selectedCount={selectedItems.length}
             onClearSelection={() => setSelectedItems([])}
@@ -480,17 +491,22 @@ const App: React.FC = () => {
         ) : (
           <div className="mb-8 p-4 bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="relative w-full sm:w-auto">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                          <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                      />
+                  <div className="w-full sm:w-auto">
+                    <div className="relative flex-grow sm:flex-grow-0">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search tasks..."
+                          className="block w-full sm:w-72 rounded-md border-0 py-2 pl-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                          value={searchTerm}
+                          onChange={e => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:block whitespace-nowrap mt-2">
+                      {currentDate}
+                    </p>
                   </div>
                   
                   <div className="text-center order-first sm:order-none">
@@ -499,9 +515,14 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-end gap-3 w-full sm:w-auto">
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:block whitespace-nowrap">
-                      {currentDate}
-                    </p>
+                    <button
+                        type="button"
+                        onClick={handleToggleSelectionMode}
+                        className={`inline-flex items-center justify-center h-10 w-10 rounded-md shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 ${isSelectionMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
+                        title={isSelectionMode ? 'Hide Selection' : 'Show Selection'}
+                    >
+                        <ClipboardDocumentCheckIcon className="h-5 w-5" />
+                    </button>
                     <EditModeToggle isEditMode={isEditMode} onToggle={() => setIsEditMode(prev => !prev)} />
                     <button
                       type="button"
@@ -562,14 +583,16 @@ const App: React.FC = () => {
               <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th scope="col" className="relative px-7 sm:w-12 sm:px-6">
-                        <input
-                            type="checkbox"
-                            className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
-                            ref={headerCheckboxRef}
-                            onChange={handleToggleAllSelection}
-                        />
-                    </th>
+                    {isSelectionMode && (
+                        <th scope="col" className="relative px-7 sm:w-12 sm:px-6">
+                            <input
+                                type="checkbox"
+                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
+                                ref={headerCheckboxRef}
+                                onChange={handleToggleAllSelection}
+                            />
+                        </th>
+                    )}
                     <SortableHeader column="dateOfWork" title="Date" className="px-3" />
                     <SortableHeader column="workBy" title="Work By" className="px-3" />
                     <SortableHeader column="workOfType" title="Work Type" className="px-3" />
@@ -588,6 +611,7 @@ const App: React.FC = () => {
                       key={item.id}
                       item={item}
                       isSelected={selectedItems.includes(item.id!)}
+                      isSelectionMode={isSelectionMode}
                       onToggleSelection={handleToggleItemSelection}
                       onEdit={() => handleOpenModal(item)}
                       onDelete={() => handleDelete(item.id!)}

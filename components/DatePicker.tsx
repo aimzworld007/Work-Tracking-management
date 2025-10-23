@@ -57,7 +57,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
   const days = getDaysInMonth();
   const startingDay = getStartingDayOfMonth();
 
-  const formattedValue = value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+  const formattedValue = value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
