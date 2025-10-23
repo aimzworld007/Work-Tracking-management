@@ -13,6 +13,7 @@ interface WorkItemRowProps {
   onUnarchive: () => void;
   onStatusChange: (id: string, status: string) => Promise<void>;
   statusOptions: string[];
+  isEditMode: boolean;
 }
 
 const COLORS = [
@@ -60,7 +61,7 @@ const getTrackingLink = (workType: string): string | null => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
@@ -171,10 +172,10 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
           </select>
         ) : (
           <button
-            onClick={() => !isSaving && setIsEditingStatus(true)}
-            disabled={isSaving}
-            className="group w-full flex items-center text-left rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:cursor-wait"
-            title="Click to change status"
+            onClick={() => !isSaving && isEditMode && setIsEditingStatus(true)}
+            disabled={isSaving || !isEditMode}
+            className="group w-full flex items-center text-left rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:cursor-not-allowed"
+            title={isEditMode ? "Click to change status" : ""}
           >
             <StatusBadge status={displayStatus} />
             {isSaving && <span className="text-xs ml-2 animate-pulse text-slate-500 dark:text-slate-400">Saving...</span>}
@@ -216,32 +217,34 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, onToggleSel
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-center font-semibold text-slate-700 dark:text-slate-300">{item.dayCount}</td>
       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-        <div className="flex justify-end items-center gap-1">
-            {!item.isArchived ? (
-              <>
-                <button onClick={onEdit} className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md transition-colors" title="Edit">
-                    <EditIcon className="h-4 w-4" />
-                </button>
-                <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
-                    <DeleteIcon className="h-4 w-4" />
-                </button>
-                {(item.status === 'Approved' || item.status === 'Rejected') && (
-                     <button onClick={handleArchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
-                        <ArchiveIcon className="h-4 w-4" />
-                    </button>
-                )}
-              </>
-            ) : (
+        {isEditMode && (
+          <div className="flex justify-end items-center gap-1">
+              {!item.isArchived ? (
                 <>
-                    <button onClick={handleUnarchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
-                        <UnarchiveIcon className="h-4 w-4" />
-                    </button>
-                    <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
-                        <DeleteIcon className="h-4 w-4" />
-                    </button>
+                  <button onClick={onEdit} className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md transition-colors" title="Edit">
+                      <EditIcon className="h-4 w-4" />
+                  </button>
+                  <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                      <DeleteIcon className="h-4 w-4" />
+                  </button>
+                  {(item.status === 'Approved' || item.status === 'Rejected') && (
+                       <button onClick={handleArchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
+                          <ArchiveIcon className="h-4 w-4" />
+                      </button>
+                  )}
                 </>
-            )}
-        </div>
+              ) : (
+                  <>
+                      <button onClick={handleUnarchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
+                          <UnarchiveIcon className="h-4 w-4" />
+                      </button>
+                      <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                          <DeleteIcon className="h-4 w-4" />
+                      </button>
+                  </>
+              )}
+          </div>
+        )}
       </td>
     </tr>
   );

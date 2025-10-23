@@ -3,9 +3,14 @@ import { AddIcon } from './icons';
 
 interface FabProps {
   onClick: () => void;
+  isVisible: boolean;
 }
 
-const Fab: React.FC<FabProps> = ({ onClick }) => {
+const Fab: React.FC<FabProps> = ({ onClick, isVisible }) => {
+  if (!isVisible) {
+    return null;
+  }
+
   return (
     <button
       type="button"

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -10,6 +11,7 @@ import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
+import EditModeToggle from './components/EditModeToggle';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -34,6 +36,11 @@ const App: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
+  const [isEditMode, setIsEditMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('isEditMode');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
       return localStorage.getItem('theme') as 'light' | 'dark';
@@ -56,6 +63,10 @@ const App: React.FC = () => {
     });
     setCurrentDate(formattedDate);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('isEditMode', JSON.stringify(isEditMode));
+  }, [isEditMode]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -455,6 +466,7 @@ const App: React.FC = () => {
             onPrint={handleBulkPrint}
             onEdit={() => setIsBulkEditModalOpen(true)}
             onDelete={handleBulkDelete}
+            isEditMode={isEditMode}
           />
         ) : (
           <div className="mb-8">
@@ -481,10 +493,12 @@ const App: React.FC = () => {
                     <p className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:block whitespace-nowrap">
                       {currentDate}
                     </p>
+                    <EditModeToggle isEditMode={isEditMode} onToggle={() => setIsEditMode(prev => !prev)} />
                     <button
                       type="button"
                       onClick={handleOpenImportModal}
-                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      className="inline-flex items-center justify-center gap-x-2 rounded-md bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!isEditMode}
                     >
                       <ImportIcon className="-ml-0.5 h-5 w-5" />
                       Import
@@ -564,6 +578,7 @@ const App: React.FC = () => {
                       onUnarchive={() => handleUnarchive(item.id!)}
                       onStatusChange={handleStatusChange}
                       statusOptions={statusOptions}
+                      isEditMode={isEditMode}
                     />
                   ))}
                 </tbody>
@@ -608,7 +623,7 @@ const App: React.FC = () => {
             />
         )}
 
-        <Fab onClick={() => handleOpenModal()} />
+        <Fab onClick={() => handleOpenModal()} isVisible={isEditMode} />
       </div>
     </div>
   );
