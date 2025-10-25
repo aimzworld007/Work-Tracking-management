@@ -2,7 +2,7 @@
 
 A modern, real-time, spreadsheet-inspired web application for managing and tracking work items. Built with React, TypeScript, Firebase, and Tailwind CSS.
 
-![App Screenshot](https://storage.googleapis.com/aistudio-hosting/workspace-llm-15520.web.app/media/d9341499-5288-4672-ad18-c2b4e857995e.png)
+![App Screenshot](https://i.ibb.co/My9ZmHq9/wroktms.png)
 
 ## ✨ Key Features
 
