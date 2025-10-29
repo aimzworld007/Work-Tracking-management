@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -11,6 +10,8 @@ import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
+import Pagination from './components/Pagination';
+import Login from './components/Login';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
@@ -25,6 +26,11 @@ const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string
 };
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
+  const [loginError, setLoginError] = useState('');
+
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,6 +56,9 @@ const App: React.FC = () => {
   });
 
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
@@ -111,6 +120,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const q = db.collection("work-items").orderBy("dateOfWork", "desc");
     const unsubscribe = q.onSnapshot((querySnapshot) => {
       const items: WorkItem[] = [];
@@ -134,9 +144,10 @@ const App: React.FC = () => {
     });
     
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
   
   useEffect(() => {
+    if (!isAuthenticated) return;
     const optionsDocRef = db.collection('options').doc('appData');
     const unsubscribe = optionsDocRef.onSnapshot((doc) => {
       if (doc.exists) {
@@ -157,7 +168,7 @@ const App: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let items = [...workItems];
@@ -209,14 +220,41 @@ const App: React.FC = () => {
     setFilteredItems(items);
   }, [searchTerm, activeTab, workItems, sortColumn, sortDirection]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab, itemsPerPage]);
+
+  // Calculate paginated items
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
+  // Keep current page within bounds
+  useEffect(() => {
+      const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+      if (currentPage > totalPages && totalPages > 0) {
+          setCurrentPage(totalPages);
+      }
+  }, [currentPage, filteredItems.length, itemsPerPage]);
+
   useEffect(() => {
     if (headerCheckboxRef.current) {
-        const allVisibleSelected = filteredItems.length > 0 && selectedItems.length === filteredItems.length;
-        const someVisibleSelected = selectedItems.length > 0 && selectedItems.length < filteredItems.length;
-        headerCheckboxRef.current.checked = allVisibleSelected;
-        headerCheckboxRef.current.indeterminate = someVisibleSelected;
+        if (paginatedItems.length === 0) {
+            headerCheckboxRef.current.checked = false;
+            headerCheckboxRef.current.indeterminate = false;
+            return;
+        }
+
+        const currentPageIds = new Set(paginatedItems.map(i => i.id!));
+        const selectedOnPageCount = selectedItems.filter(id => currentPageIds.has(id)).length;
+        
+        const allOnPageSelected = selectedOnPageCount === paginatedItems.length;
+        const someOnPageSelected = selectedOnPageCount > 0 && !allOnPageSelected;
+
+        headerCheckboxRef.current.checked = allOnPageSelected;
+        headerCheckboxRef.current.indeterminate = someOnPageSelected;
     }
-  }, [selectedItems, filteredItems]);
+  }, [selectedItems, paginatedItems]);
 
   const handleOpenModal = (item: WorkItem | null = null) => {
     setCurrentItem(item);
@@ -389,11 +427,17 @@ const App: React.FC = () => {
   };
 
   const handleToggleAllSelection = () => {
-      const allVisibleIds = filteredItems.map(item => item.id!);
-      if (selectedItems.length === allVisibleIds.length) {
-          setSelectedItems([]);
+      const currentPageIds = paginatedItems.map(item => item.id!);
+      const currentPageIdsSet = new Set(currentPageIds);
+      
+      const selectedOnPageCount = selectedItems.filter(id => currentPageIdsSet.has(id)).length;
+
+      if (selectedOnPageCount === currentPageIds.length) {
+          // All on page are selected, so deselect them
+          setSelectedItems(prev => prev.filter(id => !currentPageIdsSet.has(id)));
       } else {
-          setSelectedItems(allVisibleIds);
+          // Not all (or none) are selected, so select all on this page, preserving other selections
+          setSelectedItems(prev => [...new Set([...prev, ...currentPageIds])]);
       }
   };
   
@@ -512,6 +556,26 @@ const App: React.FC = () => {
     );
   };
 
+  const handleLogin = (username: string, password) => {
+    if (username === 'admin' && password === '123456') {
+      localStorage.setItem('isAuthenticated', 'true');
+      setIsAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid username or password.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} error={loginError} />;
+  }
+
+
   return (
     <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans flex flex-col">
       <div className="hidden print:block text-center pt-4 mb-4">
@@ -567,6 +631,7 @@ const App: React.FC = () => {
                         onDecreaseFontSize={handleDecreaseFontSize}
                         onIncreaseFontSize={handleIncreaseFontSize}
                         onResetFontSize={handleResetFontSize}
+                        onLogout={handleLogout}
                       />
                   </div>
               </div>
@@ -632,7 +697,7 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {filteredItems.map((item) => (
+                  {paginatedItems.map((item) => (
                     <WorkItemRow
                       key={item.id}
                       item={item}
@@ -660,6 +725,15 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+             {filteredItems.length > 0 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={filteredItems.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                />
+            )}
         </div>
         
         {isModalOpen && (

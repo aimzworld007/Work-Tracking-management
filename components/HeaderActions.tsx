@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { CogIcon, PrintIcon, ImportIcon, SunIcon, MoonIcon, LockOpenIcon, LockClosedIcon, ClipboardDocumentCheckIcon } from './icons';
+import { CogIcon, PrintIcon, ImportIcon, SunIcon, MoonIcon, LockOpenIcon, LockClosedIcon, ClipboardDocumentCheckIcon, LogoutIcon } from './icons';
 import FontSizeAdjuster from './FontSizeAdjuster';
 
 interface HeaderActionsProps {
@@ -15,6 +14,7 @@ interface HeaderActionsProps {
   onDecreaseFontSize: () => void;
   onIncreaseFontSize: () => void;
   onResetFontSize: () => void;
+  onLogout: () => void;
 }
 
 const HeaderActions: React.FC<HeaderActionsProps> = ({
@@ -29,6 +29,7 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
   onDecreaseFontSize,
   onIncreaseFontSize,
   onResetFontSize,
+  onLogout,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,12 +73,16 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
     </div>
   );
   
-  const ActionButton: React.FC<{ label: string; onClick: () => void; icon: React.ReactNode; disabled?: boolean }> = ({ label, onClick, icon, disabled = false }) => (
+  const ActionButton: React.FC<{ label: string; onClick: () => void; icon: React.ReactNode; disabled?: boolean, isDestructive?: boolean }> = ({ label, onClick, icon, disabled = false, isDestructive = false }) => (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      className={`w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${
+        isDestructive
+        ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40'
+        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {icon}
       <span>{label}</span>
@@ -148,6 +153,14 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
                         icon={<PrintIcon className="h-5 w-5" />}
                     />
                 </div>
+            </div>
+             <div className="border-t border-slate-200 dark:border-slate-700 px-1 py-1">
+                 <ActionButton 
+                    label="Logout"
+                    onClick={onLogout}
+                    icon={<LogoutIcon className="h-5 w-5" />}
+                    isDestructive
+                />
             </div>
           </div>
         </div>
