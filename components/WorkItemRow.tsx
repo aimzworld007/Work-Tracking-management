@@ -79,8 +79,21 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
-    const date = new Date(`${dateStr}T00:00:00`);
+    const date = new Date(dateStr);
     if (isNaN(date.getTime())) return 'Invalid Date';
+
+    const hasTime = dateStr.includes('T');
+
+    if (hasTime) {
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',

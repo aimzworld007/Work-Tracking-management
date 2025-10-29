@@ -102,7 +102,7 @@ const App: React.FC = () => {
   const calculateDayCount = (dateStr: string) => {
     if (!dateStr) return 0;
     const today = new Date();
-    const workDate = new Date(`${dateStr}T00:00:00`);
+    const workDate = new Date(dateStr);
     if (isNaN(workDate.getTime())) return 0;
     today.setHours(0, 0, 0, 0);
     workDate.setHours(0, 0, 0, 0);
@@ -236,10 +236,24 @@ const App: React.FC = () => {
       if (itemToSave.id) {
         const { id, ...dataToUpdate } = itemToSave;
         const docRef = db.collection("work-items").doc(id);
+
+        const originalItem = workItems.find(w => w.id === id);
+        if (originalItem && originalItem.dateOfWork.includes('T')) {
+            const timePart = originalItem.dateOfWork.split('T')[1];
+            dataToUpdate.dateOfWork = `${dataToUpdate.dateOfWork}T${timePart}`;
+        }
+        
         await docRef.update(dataToUpdate);
       } else {
+        const selectedDate = new Date(`${itemToSave.dateOfWork}T00:00:00`);
+        const now = new Date();
+        selectedDate.setHours(now.getHours());
+        selectedDate.setMinutes(now.getMinutes());
+        selectedDate.setSeconds(now.getSeconds());
+
         await db.collection("work-items").add({ 
           ...itemToSave,
+          dateOfWork: selectedDate.toISOString(),
           isArchived: false,
         });
       }

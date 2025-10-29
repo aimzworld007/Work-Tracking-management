@@ -59,7 +59,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
       setIsCustomWorkType(isCustom);
       setFormData({
         id: item.id,
-        dateOfWork: item.dateOfWork,
+        dateOfWork: item.dateOfWork.split('T')[0],
         workBy: item.workBy,
         workOfType: item.workOfType,
         status: item.status,
