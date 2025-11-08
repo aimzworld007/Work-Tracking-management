@@ -184,6 +184,20 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
     if (item.due < item.salesPrice) return 'text-amber-600 dark:text-amber-500';
     return 'text-red-600 dark:text-red-500';
   };
+  
+  const getPriorityBadgeClass = () => {
+    switch (item.priority) {
+      case 'High':
+        return 'bg-red-100 text-red-700 ring-red-600/20 dark:bg-red-900/50 dark:text-red-300 dark:ring-red-500/20';
+      case 'Medium':
+        return 'bg-amber-100 text-amber-700 ring-amber-600/20 dark:bg-amber-900/50 dark:text-amber-300 dark:ring-amber-500/20';
+      case 'Low':
+        return 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-700/50 dark:text-slate-300 dark:ring-slate-500/20';
+      default:
+        return 'bg-gray-100 text-gray-700 ring-gray-600/20 dark:bg-gray-900/50 dark:text-gray-300 dark:ring-gray-500/20';
+    }
+  };
+
 
   return (
     <tr 
@@ -234,6 +248,11 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
             {isSaving && <span className="text-xs ml-2 animate-pulse text-slate-500 dark:text-slate-400">Saving...</span>}
           </button>
         )}
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
+        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getPriorityBadgeClass()}`}>
+            {item.priority}
+        </span>
       </td>
       <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
         <div className="font-medium text-slate-900 dark:text-slate-100">{item.customerName}</div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { WorkItem } from './types';
+import { WorkItem, Priority } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
@@ -132,6 +132,7 @@ const App: React.FC = () => {
           workBy: data.workBy || '',
           workOfType: data.workOfType || 'N/A',
           status: data.status || 'N/A',
+          priority: data.priority || 'Medium',
           customerName: data.customerName || 'N/A',
           passportNumber: data.passportNumber || '',
           trackingNumber: data.trackingNumber || '',
@@ -197,6 +198,7 @@ const App: React.FC = () => {
     }
 
     if (sortColumn) {
+      const priorityOrder: Record<Priority, number> = { 'High': 3, 'Medium': 2, 'Low': 1 };
       items.sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
@@ -208,6 +210,8 @@ const App: React.FC = () => {
         let comparison = 0;
         if (sortColumn === 'dayCount' || sortColumn === 'salesPrice' || sortColumn === 'advance' || sortColumn === 'due') {
           comparison = (aValue as number) - (bValue as number);
+        } else if (sortColumn === 'priority') {
+          comparison = priorityOrder[aValue as Priority] - priorityOrder[bValue as Priority];
         } else {
           comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
         }
@@ -346,6 +350,7 @@ const App: React.FC = () => {
         workBy,
         workOfType,
         status,
+        priority: 'Medium' as Priority,
         customerName,
         trackingNumber,
         passportNumber: '',
@@ -700,6 +705,7 @@ const App: React.FC = () => {
                     <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
+                    <SortableHeader column="priority" title="Priority" thClassName="bg-emerald-500 hover:bg-emerald-600" />
                     <SortableHeader column="customerName" title="Customer Details" thClassName="bg-amber-500 hover:bg-amber-600" />
                     <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="bg-violet-500 hover:bg-violet-600" />
                     <SortableHeader column="salesPrice" title="Sales Price" thClassName="bg-rose-500 hover:bg-rose-600" />

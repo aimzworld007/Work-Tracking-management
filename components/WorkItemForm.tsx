@@ -45,6 +45,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     workBy: '',
     workOfType: '',
     status: statusOptions[0] || '',
+    priority: 'Medium',
     customerName: '',
     passportNumber: '',
     trackingNumber: '',
@@ -65,6 +66,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         workBy: item.workBy,
         workOfType: item.workOfType,
         status: item.status,
+        priority: item.priority || 'Medium',
         customerName: item.customerName,
         passportNumber: item.passportNumber,
         trackingNumber: item.trackingNumber,
@@ -80,6 +82,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            workBy: '',
            workOfType: '',
            status: statusOptions[0] || '',
+           priority: 'Medium',
            customerName: '',
            passportNumber: '',
            trackingNumber: '',
@@ -183,6 +186,24 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                         </div>
 
                                         <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
+                                        
+                                        <div>
+                                            <label htmlFor="priority" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Priority</label>
+                                            <div className="mt-2">
+                                                <select
+                                                    id="priority"
+                                                    name="priority"
+                                                    value={formData.priority}
+                                                    onChange={handleChange}
+                                                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                                >
+                                                    <option>Low</option>
+                                                    <option>Medium</option>
+                                                    <option>High</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div className="md:col-span-2">
                                             <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Customer Name</label>
                                             <div className="mt-2">
