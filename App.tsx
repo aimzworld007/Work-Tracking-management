@@ -701,17 +701,13 @@ const App: React.FC = () => {
                             />
                         </th>
                     )}
-                    <SortableHeader column="dateOfWork" title="Date" thClassName="bg-sky-500 hover:bg-sky-600" />
+                    <SortableHeader column="dateOfWork" title="Date / Age" thClassName="bg-sky-500 hover:bg-sky-600" />
                     <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
                     <SortableHeader column="priority" title="Priority" thClassName="bg-emerald-500 hover:bg-emerald-600" />
-                    <SortableHeader column="customerName" title="Customer Details" thClassName="bg-amber-500 hover:bg-amber-600" />
-                    <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="bg-violet-500 hover:bg-violet-600" />
-                    <SortableHeader column="salesPrice" title="Sales Price" thClassName="bg-rose-500 hover:bg-rose-600" />
-                    <SortableHeader column="advance" title="Advance" thClassName="bg-cyan-500 hover:bg-cyan-600" />
-                    <SortableHeader column="due" title="Due" thClassName="bg-indigo-500 hover:bg-indigo-600" />
-                    <SortableHeader column="dayCount" title="Days Passed" thClassName="bg-lime-500 hover:bg-lime-600" />
+                    <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
+                    <SortableHeader column="due" title="Financials" thClassName="bg-rose-500 hover:bg-rose-600" />
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
                         <span className="sr-only">Actions</span>
                     </th>

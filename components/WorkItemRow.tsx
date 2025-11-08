@@ -207,7 +207,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
         } hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
     >
       {isSelectionMode && (
-        <td className="relative px-7 sm:w-12 sm:px-6">
+        <td className="relative px-7 sm:w-12 sm:px-6 align-top pt-4">
             <input
                 type="checkbox"
                 className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
@@ -217,10 +217,13 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
             />
         </td>
       )}
-      <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">{formatDate(item.dateOfWork)}</td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workBy}</td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">{item.workOfType}</td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-900 dark:text-slate-100 align-top">
+        <div className="font-medium">{formatDate(item.dateOfWork)}</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{item.dayCount} days ago</div>
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workBy}</td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workOfType}</td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         {isEditingStatus ? (
           <select
             value={displayStatus}
@@ -249,85 +252,86 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
           </button>
         )}
       </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getPriorityBadgeClass()}`}>
             {item.priority}
         </span>
       </td>
-      <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
+      <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         <div className="font-medium text-slate-900 dark:text-slate-100">{item.customerName}</div>
-        {(item.passportNumber || item.mobileWhatsappNumber) && (
-            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
-                {item.passportNumber && (
-                    <div>
-                        <span className="font-semibold text-slate-600 dark:text-slate-300">P:</span> {item.passportNumber}
-                    </div>
-                )}
-                {item.mobileWhatsappNumber && (
-                    <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-slate-600 dark:text-slate-300">M/W:</span>
-                        {whatsAppLink ? (
-                           <a
-                                href={whatsAppLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group inline-flex items-center gap-1 text-green-600 hover:underline dark:text-green-500"
-                                title="Open WhatsApp chat"
-                            >
-                                <WhatsAppIcon className="h-3.5 w-3.5" />
-                                <span>{item.mobileWhatsappNumber}</span>
-                            </a>
-                        ) : (
-                             <span>{item.mobileWhatsappNumber}</span>
-                        )}
-                    </div>
-                )}
-            </div>
-        )}
-      </td>
-      <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400">
-        <div className="flex items-center gap-2">
-            {trackingLink && item.trackingNumber ? (
-                <a
-                    href={trackingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
-                    title="Open verification website in a new tab"
-                >
-                    <span>{item.trackingNumber}</span>
-                    <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
-                </a>
-            ) : (
-                <span>{item.trackingNumber}</span>
+        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+            {item.passportNumber && (
+                <div>
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">Passport:</span> {item.passportNumber}
+                </div>
             )}
-            {item.trackingNumber && (
-                <button
-                    onClick={handleCopy}
-                    disabled={isCopied}
-                    className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    title={isCopied ? 'Copied!' : 'Copy tracking number'}
-                >
-                    {isCopied ? (
-                        <CheckIcon className="h-4 w-4 text-green-500" />
+            {item.mobileWhatsappNumber && (
+                <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">M/W:</span>
+                    {whatsAppLink ? (
+                       <a
+                            href={whatsAppLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-1 text-green-600 hover:underline dark:text-green-500"
+                            title="Open WhatsApp chat"
+                        >
+                            <WhatsAppIcon className="h-3.5 w-3.5" />
+                            <span>{item.mobileWhatsappNumber}</span>
+                        </a>
                     ) : (
-                        <CopyIcon className="h-4 w-4" />
+                         <span>{item.mobileWhatsappNumber}</span>
                     )}
-                </button>
+                </div>
             )}
+             <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-slate-600 dark:text-slate-300">Tracking:</span>
+                <div className="flex items-center">
+                    {trackingLink && item.trackingNumber ? (
+                        <a
+                            href={trackingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
+                            title="Open verification website in a new tab"
+                        >
+                            <span>{item.trackingNumber}</span>
+                            <ExternalLinkIcon className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+                        </a>
+                    ) : (
+                        <span>{item.trackingNumber || 'N/A'}</span>
+                    )}
+                    {item.trackingNumber && (
+                        <button
+                            onClick={handleCopy}
+                            disabled={isCopied}
+                            className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            title={isCopied ? 'Copied!' : 'Copy tracking number'}
+                        >
+                            {isCopied ? (
+                                <CheckIcon className="h-4 w-4 text-green-500" />
+                            ) : (
+                                <CopyIcon className="h-4 w-4" />
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
       </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 text-right">
-        {item.salesPrice > 0 ? item.salesPrice.toLocaleString() : '-'}
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
+        <dl className="grid grid-cols-2 gap-x-2 text-right">
+            <dt className="text-xs text-slate-500 dark:text-slate-400">Price:</dt>
+            <dd className="font-medium text-slate-800 dark:text-slate-200">{item.salesPrice > 0 ? item.salesPrice.toLocaleString() : '-'}</dd>
+            
+            <dt className="text-xs text-slate-500 dark:text-slate-400">Paid:</dt>
+            <dd className="font-medium text-slate-800 dark:text-slate-200">{item.advance > 0 ? item.advance.toLocaleString() : '-'}</dd>
+            
+            <dt className="text-xs text-slate-500 dark:text-slate-400">Due:</dt>
+            <dd className={`font-semibold ${getDueColor()}`}>{item.salesPrice > 0 ? (item.due > 0 ? item.due.toLocaleString() : 'Paid') : '-'}</dd>
+        </dl>
       </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 text-right">
-        {item.advance > 0 ? item.advance.toLocaleString() : '-'}
-      </td>
-      <td className={`whitespace-nowrap px-3 py-4 text-sm font-semibold text-right ${getDueColor()}`}>
-        {item.salesPrice > 0 ? (item.due > 0 ? item.due.toLocaleString() : 'Paid') : '-'}
-      </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-center font-semibold text-slate-700 dark:text-slate-300">{item.dayCount}</td>
-      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 align-top">
         {isEditMode && (
           <div className="flex justify-end items-center gap-1">
               {!item.isArchived ? (
