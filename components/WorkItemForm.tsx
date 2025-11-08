@@ -5,7 +5,7 @@ import DatePicker from './DatePicker';
 
 interface WorkItemFormProps {
   item: WorkItem | null;
-  onSave: (item: Omit<WorkItem, 'dayCount' | 'isArchived'>) => void;
+  onSave: (item: Omit<WorkItem, 'dayCount' | 'isArchived' | 'due'>) => void;
   onClose: () => void;
   workByOptions: string[];
   workTypeOptions: string[];
@@ -39,7 +39,7 @@ const DatalistInput = ({ label, name, value, onChange, options, required = false
 
 
 const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, workByOptions, workTypeOptions, statusOptions }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     id: undefined,
     dateOfWork: new Date().toISOString().split('T')[0],
     workBy: '',
@@ -49,6 +49,8 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     passportNumber: '',
     trackingNumber: '',
     mobileWhatsappNumber: '',
+    salesPrice: 0,
+    advance: 0,
   });
   
   const [isCustomWorkType, setIsCustomWorkType] = useState(false);
@@ -67,6 +69,8 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         passportNumber: item.passportNumber,
         trackingNumber: item.trackingNumber,
         mobileWhatsappNumber: item.mobileWhatsappNumber,
+        salesPrice: item.salesPrice || 0,
+        advance: item.advance || 0,
       });
     } else {
        setIsCustomWorkType(false);
@@ -80,6 +84,8 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            passportNumber: '',
            trackingNumber: '',
            mobileWhatsappNumber: '971',
+           salesPrice: 0,
+           advance: 0,
        });
     }
   }, [item, workTypeOptions, statusOptions]);
@@ -116,6 +122,8 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
 
     onSave(submissionData);
   };
+
+  const due = (Number(formData.salesPrice) || 0) - (Number(formData.advance) || 0);
 
   return (
     <div className="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -191,6 +199,26 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                             <label htmlFor="trackingNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Tracking Number</label>
                                             <div className="mt-2">
                                                 <input id="trackingNumber" type="text" name="trackingNumber" placeholder="Tracking Number" value={formData.trackingNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="salesPrice" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Sales Price</label>
+                                            <div className="mt-2">
+                                                <input id="salesPrice" type="number" name="salesPrice" placeholder="0" value={formData.salesPrice} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="advance" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Advance</label>
+                                            <div className="mt-2">
+                                                <input id="advance" type="number" name="advance" placeholder="0" value={formData.advance} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="due" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Due</label>
+                                            <div className="mt-2">
+                                                <div className="block w-full rounded-md border-0 bg-slate-100 dark:bg-slate-900/50 py-1.5 px-3 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 sm:text-sm sm:leading-6">
+                                                    {due.toLocaleString()}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="md:col-span-2">

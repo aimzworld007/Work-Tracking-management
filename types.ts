@@ -13,5 +13,8 @@ export interface WorkItem {
   trackingNumber: string;
   mobileWhatsappNumber: string;
   dayCount: number;
+  salesPrice: number;
+  advance: number;
+  due: number;
   isArchived: boolean;
 }

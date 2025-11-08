@@ -178,11 +178,19 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
 
   const whatsAppLink = generateWhatsAppLink();
 
+  const getDueColor = () => {
+    if (item.salesPrice <= 0) return 'text-slate-500 dark:text-slate-400';
+    if (item.due <= 0) return 'text-green-600 dark:text-green-500';
+    if (item.due < item.salesPrice) return 'text-amber-600 dark:text-amber-500';
+    return 'text-red-600 dark:text-red-500';
+  };
 
   return (
     <tr 
         data-item-id={item.id}
-        className={`${isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'} hover:bg-indigo-50/20 dark:hover:bg-slate-800 transition-colors duration-150 border-l-4 ${colorClass}`}
+        className={`${
+          isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'
+        } hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
     >
       {isSelectionMode && (
         <td className="relative px-7 sm:w-12 sm:px-6">
@@ -289,6 +297,15 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
                 </button>
             )}
         </div>
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 text-right">
+        {item.salesPrice > 0 ? item.salesPrice.toLocaleString() : '-'}
+      </td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 text-right">
+        {item.advance > 0 ? item.advance.toLocaleString() : '-'}
+      </td>
+      <td className={`whitespace-nowrap px-3 py-4 text-sm font-semibold text-right ${getDueColor()}`}>
+        {item.salesPrice > 0 ? (item.due > 0 ? item.due.toLocaleString() : 'Paid') : '-'}
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-center font-semibold text-slate-700 dark:text-slate-300">{item.dayCount}</td>
       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">

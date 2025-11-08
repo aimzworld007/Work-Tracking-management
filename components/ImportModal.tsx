@@ -16,7 +16,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onImport }) => {
   };
 
   const instructions = `Paste tab-separated data below (e.g., from Excel). The first line should be a header and will be ignored.
-The expected columns are: S.N, Date of Work, Work By, Type Of Work, Status, Customer Name, Tracking Number, Mobile/WhatsApp Number.`;
+The expected columns are: S.N, Date of Work, Work By, Type Of Work, Status, Customer Name, Tracking Number, Mobile/WhatsApp Number, Sales Price, Advance.`;
 
   return (
      <div className="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">

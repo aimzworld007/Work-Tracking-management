@@ -37,6 +37,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971506059729',
     dayCount: 23,
+    salesPrice: 150,
+    advance: 50,
+    due: 100,
     isArchived: false,
   },
   {
@@ -50,6 +53,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971563960743',
     dayCount: 50,
+    salesPrice: 200,
+    advance: 200,
+    due: 0,
     isArchived: false,
   },
   {
@@ -63,6 +69,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971557864954',
     dayCount: 39,
+    salesPrice: 250,
+    advance: 100,
+    due: 150,
     isArchived: false,
   },
   {
@@ -76,6 +85,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: 'saidul',
     dayCount: 12,
+    salesPrice: 1000,
+    advance: 0,
+    due: 1000,
     isArchived: false,
   },
   {
@@ -89,6 +101,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971564561696',
     dayCount: 7,
+    salesPrice: 800,
+    advance: 500,
+    due: 300,
     isArchived: false,
   },
   {
@@ -102,6 +117,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971547297832',
     dayCount: 5,
+    salesPrice: 200,
+    advance: 200,
+    due: 0,
     isArchived: false,
   },
   {
@@ -115,6 +133,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971507859725',
     dayCount: 5,
+    salesPrice: 200,
+    advance: 200,
+    due: 0,
     isArchived: false,
   },
   {
@@ -128,6 +149,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971543103720',
     dayCount: 5,
+    salesPrice: 200,
+    advance: 200,
+    due: 0,
     isArchived: true,
   },
   {
@@ -141,6 +165,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971545915017',
     dayCount: 2,
+    salesPrice: 200,
+    advance: 150,
+    due: 50,
     isArchived: false,
   },
   {
@@ -154,6 +181,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     passportNumber: '',
     mobileWhatsappNumber: '971568484131',
     dayCount: 2,
+    salesPrice: 350,
+    advance: 350,
+    due: 0,
     isArchived: false,
   },
 ];

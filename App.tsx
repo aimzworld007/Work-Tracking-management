@@ -137,6 +137,9 @@ const App: React.FC = () => {
           trackingNumber: data.trackingNumber || '',
           mobileWhatsappNumber: data.mobileWhatsappNumber || '',
           isArchived: data.isArchived || false,
+          salesPrice: data.salesPrice || 0,
+          advance: data.advance || 0,
+          due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
           dayCount: calculateDayCount(data.dateOfWork),
         });
       });
@@ -203,7 +206,7 @@ const App: React.FC = () => {
         if (bValue === null || bValue === undefined) return -1;
         
         let comparison = 0;
-        if (sortColumn === 'dayCount') {
+        if (sortColumn === 'dayCount' || sortColumn === 'salesPrice' || sortColumn === 'advance' || sortColumn === 'due') {
           comparison = (aValue as number) - (bValue as number);
         } else {
           comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
@@ -269,10 +272,12 @@ const App: React.FC = () => {
   const handleOpenImportModal = () => setIsImportModalOpen(true);
   const handleCloseImportModal = () => setIsImportModalOpen(false);
 
-  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'> & { id?: string }) => {
+  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due'> & { id?: string }) => {
+    const due = (Number(itemToSave.salesPrice) || 0) - (Number(itemToSave.advance) || 0);
+    const dataToSaveWithDue = { ...itemToSave, due };
     try {
-      if (itemToSave.id) {
-        const { id, ...dataToUpdate } = itemToSave;
+      if (dataToSaveWithDue.id) {
+        const { id, ...dataToUpdate } = dataToSaveWithDue;
         const docRef = db.collection("work-items").doc(id);
 
         const originalItem = workItems.find(w => w.id === id);
@@ -283,28 +288,28 @@ const App: React.FC = () => {
         
         await docRef.update(dataToUpdate);
       } else {
-        const selectedDate = new Date(`${itemToSave.dateOfWork}T00:00:00`);
+        const selectedDate = new Date(`${dataToSaveWithDue.dateOfWork}T00:00:00`);
         const now = new Date();
         selectedDate.setHours(now.getHours());
         selectedDate.setMinutes(now.getMinutes());
         selectedDate.setSeconds(now.getSeconds());
 
         await db.collection("work-items").add({ 
-          ...itemToSave,
+          ...dataToSaveWithDue,
           dateOfWork: selectedDate.toISOString(),
           isArchived: false,
         });
       }
       
       const optionsDocRef = db.collection('options').doc('appData');
-      if (!workTypeOptions.includes(itemToSave.workOfType)) {
-          await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(itemToSave.workOfType) });
+      if (!workTypeOptions.includes(dataToSaveWithDue.workOfType)) {
+          await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.workOfType) });
       }
-      if (!statusOptions.includes(itemToSave.status)) {
-          await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(itemToSave.status) });
+      if (!statusOptions.includes(dataToSaveWithDue.status)) {
+          await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.status) });
       }
-      if (itemToSave.workBy && !workByOptions.includes(itemToSave.workBy)) {
-          await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
+      if (dataToSaveWithDue.workBy && !workByOptions.includes(dataToSaveWithDue.workBy)) {
+          await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.workBy) });
       }
 
     } catch (error) {
@@ -326,11 +331,15 @@ const App: React.FC = () => {
 
     for (const line of lines) {
       const values = line.split('\t');
-      if (values.length < 8) continue;
+      if (values.length < 10) continue;
 
-      const [_sn, dateOfWork, workBy, workOfType, status, customerName, trackingNumber, customerNumber] = values.map(v => v.trim());
+      const [_sn, dateOfWork, workBy, workOfType, status, customerName, trackingNumber, customerNumber, salesPriceStr, advanceStr] = values.map(v => v.trim());
 
       if (!dateOfWork || !workOfType || !status || !customerName) continue;
+
+      const salesPrice = parseFloat(salesPriceStr) || 0;
+      const advance = parseFloat(advanceStr) || 0;
+      const due = salesPrice - advance;
 
       const item = {
         dateOfWork,
@@ -341,6 +350,9 @@ const App: React.FC = () => {
         trackingNumber,
         passportNumber: '',
         mobileWhatsappNumber: customerNumber,
+        salesPrice,
+        advance,
+        due,
       };
       itemsToSave.push(item);
 
@@ -690,6 +702,9 @@ const App: React.FC = () => {
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
                     <SortableHeader column="customerName" title="Customer Details" thClassName="bg-amber-500 hover:bg-amber-600" />
                     <SortableHeader column="trackingNumber" title="Tracking Details" thClassName="bg-violet-500 hover:bg-violet-600" />
+                    <SortableHeader column="salesPrice" title="Sales Price" thClassName="bg-rose-500 hover:bg-rose-600" />
+                    <SortableHeader column="advance" title="Advance" thClassName="bg-cyan-500 hover:bg-cyan-600" />
+                    <SortableHeader column="due" title="Due" thClassName="bg-indigo-500 hover:bg-indigo-600" />
                     <SortableHeader column="dayCount" title="Days Passed" thClassName="bg-lime-500 hover:bg-lime-600" />
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
                         <span className="sr-only">Actions</span>
