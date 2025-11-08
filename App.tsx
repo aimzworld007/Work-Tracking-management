@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { WorkItem, Priority } from './types';
+import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ImportModal from './components/ImportModal';
@@ -14,7 +14,7 @@ import Pagination from './components/Pagination';
 import Login from './components/Login';
 
 
-const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'Archived'];
+const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Archived', 'Trash'];
 
 const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string } } = {
   'All Items':        { base: 'bg-slate-500 hover:bg-slate-600', active: 'bg-slate-700 ring-slate-500', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
@@ -22,7 +22,9 @@ const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string
   'Approved':         { base: 'bg-green-500 hover:bg-green-600', active: 'bg-green-700 ring-green-500', badge: 'bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-200' },
   'Rejected':         { base: 'bg-red-500 hover:bg-red-600',     active: 'bg-red-700 ring-red-500',     badge: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200' },
   'Waiting Delivery': { base: 'bg-purple-500 hover:bg-purple-600',active: 'bg-purple-700 ring-purple-500',badge: 'bg-purple-200 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' },
+  'PAID ONLY':        { base: 'bg-cyan-500 hover:bg-cyan-600',   active: 'bg-cyan-700 ring-cyan-500',   badge: 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200' },
   'Archived':         { base: 'bg-gray-500 hover:bg-gray-600',  active: 'bg-gray-700 ring-gray-500',   badge: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
+  'Trash':            { base: 'bg-stone-500 hover:bg-stone-600',  active: 'bg-stone-700 ring-stone-500',   badge: 'bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-200' },
 };
 
 const App: React.FC = () => {
@@ -132,12 +134,13 @@ const App: React.FC = () => {
           workBy: data.workBy || '',
           workOfType: data.workOfType || 'N/A',
           status: data.status || 'N/A',
-          priority: data.priority || 'Medium',
           customerName: data.customerName || 'N/A',
           passportNumber: data.passportNumber || '',
           trackingNumber: data.trackingNumber || '',
           mobileWhatsappNumber: data.mobileWhatsappNumber || '',
           isArchived: data.isArchived || false,
+          isTrashed: data.isTrashed || false,
+          trashedAt: data.trashedAt,
           salesPrice: data.salesPrice || 0,
           advance: data.advance || 0,
           due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
@@ -188,17 +191,18 @@ const App: React.FC = () => {
       );
     }
 
-    if (activeTab === 'Archived') {
-      items = items.filter(item => item.isArchived);
+    if (activeTab === 'Trash') {
+        items = items.filter(item => item.isTrashed);
+    } else if (activeTab === 'Archived') {
+        items = items.filter(item => item.isArchived && !item.isTrashed);
     } else {
-      items = items.filter(item => !item.isArchived);
-      if (activeTab !== 'All Items') {
-        items = items.filter(item => item.status === activeTab);
-      }
+        items = items.filter(item => !item.isArchived && !item.isTrashed);
+        if (activeTab !== 'All Items') {
+            items = items.filter(item => item.status === activeTab);
+        }
     }
 
     if (sortColumn) {
-      const priorityOrder: Record<Priority, number> = { 'High': 3, 'Medium': 2, 'Low': 1 };
       items.sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
@@ -210,8 +214,6 @@ const App: React.FC = () => {
         let comparison = 0;
         if (sortColumn === 'dayCount' || sortColumn === 'salesPrice' || sortColumn === 'advance' || sortColumn === 'due') {
           comparison = (aValue as number) - (bValue as number);
-        } else if (sortColumn === 'priority') {
-          comparison = priorityOrder[aValue as Priority] - priorityOrder[bValue as Priority];
         } else {
           comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
         }
@@ -276,7 +278,7 @@ const App: React.FC = () => {
   const handleOpenImportModal = () => setIsImportModalOpen(true);
   const handleCloseImportModal = () => setIsImportModalOpen(false);
 
-  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due'> & { id?: string }) => {
+  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due' | 'isTrashed' | 'trashedAt'> & { id?: string }) => {
     const due = (Number(itemToSave.salesPrice) || 0) - (Number(itemToSave.advance) || 0);
     const dataToSaveWithDue = { ...itemToSave, due };
     try {
@@ -302,6 +304,7 @@ const App: React.FC = () => {
           ...dataToSaveWithDue,
           dateOfWork: selectedDate.toISOString(),
           isArchived: false,
+          isTrashed: false,
         });
       }
       
@@ -328,7 +331,7 @@ const App: React.FC = () => {
       lines.shift();
     }
 
-    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived'>[] = [];
+    const itemsToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'isTrashed'>[] = [];
     const newWorkTypes = new Set<string>();
     const newStatuses = new Set<string>();
     const newWorkBy = new Set<string>();
@@ -350,7 +353,6 @@ const App: React.FC = () => {
         workBy,
         workOfType,
         status,
-        priority: 'Medium' as Priority,
         customerName,
         trackingNumber,
         passportNumber: '',
@@ -375,7 +377,7 @@ const App: React.FC = () => {
       const batch = db.batch();
       itemsToSave.forEach(item => {
         const docRef = db.collection("work-items").doc();
-        batch.set(docRef, { ...item, isArchived: false });
+        batch.set(docRef, { ...item, isArchived: false, isTrashed: false });
       });
       await batch.commit();
 
@@ -402,15 +404,30 @@ const App: React.FC = () => {
     }
   };
 
-
-  const handleDelete = async (id: string) => {
+  const handleMoveToTrash = async (id: string) => {
     try {
-      await db.collection("work-items").doc(id).delete();
+      const docRef = db.collection("work-items").doc(id);
+      await docRef.update({ 
+          isTrashed: true,
+          trashedAt: new Date().toISOString()
+      });
     } catch (error) {
-      console.error("Error deleting document: ", error);
+      console.error("Error moving item to trash: ", error);
     }
   };
   
+  const handleRestoreFromTrash = async (id: string) => {
+    try {
+        const docRef = db.collection("work-items").doc(id);
+        await docRef.update({
+            isTrashed: false,
+            trashedAt: firebase.firestore.FieldValue.delete()
+        });
+    } catch(error) {
+        console.error("Error restoring item from trash: ", error);
+    }
+  };
+
   const handleArchive = async (id: string) => {
     try {
         const docRef = db.collection("work-items").doc(id);
@@ -458,18 +475,22 @@ const App: React.FC = () => {
       }
   };
   
-  const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete these ${selectedItems.length} items? This action cannot be undone.`)) {
+  const handleBulkMoveToTrash = async () => {
+    if (window.confirm(`Are you sure you want to move these ${selectedItems.length} items to the trash?`)) {
       try {
         const batch = db.batch();
         selectedItems.forEach(id => {
-          batch.delete(db.collection("work-items").doc(id));
+          const docRef = db.collection("work-items").doc(id);
+          batch.update(docRef, { 
+              isTrashed: true,
+              trashedAt: new Date().toISOString()
+          });
         });
         await batch.commit();
         setSelectedItems([]);
       } catch (error) {
-        console.error("Error performing bulk delete: ", error);
-        alert("An error occurred during bulk delete. Check the console for details.");
+        console.error("Error performing bulk move to trash: ", error);
+        alert("An error occurred during bulk move to trash. Check the console for details.");
       }
     }
   };
@@ -518,9 +539,10 @@ const App: React.FC = () => {
 
   
   const getTabCount = (tab: string): number => {
-    if (tab === 'All Items') return workItems.filter(item => !item.isArchived).length;
-    if (tab === 'Archived') return workItems.filter(item => item.isArchived).length;
-    return workItems.filter(item => item.status === tab && !item.isArchived).length;
+    if (tab === 'All Items') return workItems.filter(item => !item.isArchived && !item.isTrashed).length;
+    if (tab === 'Archived') return workItems.filter(item => item.isArchived && !item.isTrashed).length;
+    if (tab === 'Trash') return workItems.filter(item => item.isTrashed).length;
+    return workItems.filter(item => item.status === tab && !item.isArchived && !item.isTrashed).length;
   }
   
   const handleSort = (column: keyof WorkItem) => {
@@ -606,7 +628,7 @@ const App: React.FC = () => {
             onClearSelection={() => setSelectedItems([])}
             onPrint={handleBulkPrint}
             onEdit={() => setIsBulkEditModalOpen(true)}
-            onDelete={handleBulkDelete}
+            onDelete={handleBulkMoveToTrash}
             isEditMode={isEditMode}
           />
         ) : (
@@ -701,11 +723,10 @@ const App: React.FC = () => {
                             />
                         </th>
                     )}
-                    <SortableHeader column="dateOfWork" title="Date / Age" thClassName="bg-sky-500 hover:bg-sky-600" />
+                    <SortableHeader column="dateOfWork" title="Date / Time" thClassName="bg-sky-500 hover:bg-sky-600" />
                     <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
-                    <SortableHeader column="priority" title="Priority" thClassName="bg-emerald-500 hover:bg-emerald-600" />
                     <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
                     <SortableHeader column="due" title="Financials" thClassName="bg-rose-500 hover:bg-rose-600" />
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
@@ -722,7 +743,8 @@ const App: React.FC = () => {
                       isSelectionMode={isSelectionMode}
                       onToggleSelection={handleToggleItemSelection}
                       onEdit={() => handleOpenModal(item)}
-                      onDelete={() => handleDelete(item.id!)}
+                      onDelete={() => handleMoveToTrash(item.id!)}
+                      onRestore={() => handleRestoreFromTrash(item.id!)}
                       onArchive={() => handleArchive(item.id!)}
                       onUnarchive={() => handleUnarchive(item.id!)}
                       onStatusChange={handleStatusChange}

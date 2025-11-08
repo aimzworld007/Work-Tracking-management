@@ -1,7 +1,5 @@
 // Defines the possible statuses for a work item.
-export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | string;
-
-export type Priority = 'Low' | 'Medium' | 'High';
+export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | 'PAID ONLY' | string;
 
 // Defines the structure of a work item.
 export interface WorkItem {
@@ -10,7 +8,6 @@ export interface WorkItem {
   workBy: string;
   workOfType: string;
   status: Status;
-  priority: Priority;
   customerName: string;
   passportNumber: string;
   trackingNumber: string;
@@ -20,4 +17,6 @@ export interface WorkItem {
   advance: number;
   due: number;
   isArchived: boolean;
+  isTrashed: boolean;
+  trashedAt?: string;
 }

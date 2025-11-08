@@ -35,6 +35,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
         return 'bg-red-100 text-red-700 ring-red-600/20 dark:bg-red-900/50 dark:text-red-300 dark:ring-red-500/20';
       case 'waiting delivery':
         return 'bg-purple-100 text-purple-700 ring-purple-600/20 dark:bg-purple-900/50 dark:text-purple-300 dark:ring-purple-500/20';
+      case 'paid only':
+        return 'bg-cyan-100 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/50 dark:text-cyan-300 dark:ring-cyan-500/20';
       default:
         const hash = stringToHash(status);
         return COLORS[hash % COLORS.length];

@@ -23,6 +23,7 @@ export const INITIAL_STATUS_OPTIONS: string[] = [
   'Approved',
   'Rejected',
   'Waiting Delivery',
+  'PAID ONLY',
 ];
 
 export const INITIAL_WORK_ITEMS: WorkItem[] = [
@@ -32,7 +33,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'PAKISTANI PP RENEWAL',
     status: 'UNDER PROCESSING',
-    priority: 'Medium',
     customerName: 'AHMED ULLAH',
     trackingNumber: 'L-P542670455',
     passportNumber: '',
@@ -42,6 +42,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 50,
     due: 100,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '2',
@@ -49,7 +50,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'Lost PP Certificate',
     status: 'UNDER PROCESSING',
-    priority: 'Low',
     customerName: 'SIPON ALI',
     trackingNumber: 'L-P542670455',
     passportNumber: '',
@@ -59,6 +59,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 200,
     due: 0,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '3',
@@ -66,7 +67,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'Lost PP Certificate',
     status: 'UNDER PROCESSING',
-    priority: 'Medium',
     customerName: 'ISHAK ALI',
     trackingNumber: 'L-P542674602',
     passportNumber: '',
@@ -76,6 +76,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 100,
     due: 150,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '4',
@@ -83,7 +84,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'withdraw absconding',
     status: 'Rejected',
-    priority: 'High',
     customerName: 'saidul',
     trackingNumber: 'MB301010289AE',
     passportNumber: '',
@@ -93,6 +93,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 0,
     due: 1000,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '5',
@@ -100,7 +101,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: '',
     workOfType: 'withdraw absconding',
     status: 'UNDER PROCESSING',
-    priority: 'High',
     customerName: 'JUWEL MIAH',
     trackingNumber: 'MB301291844AE',
     passportNumber: '',
@@ -110,6 +110,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 500,
     due: 300,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '6',
@@ -117,7 +118,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'MONIR',
     workOfType: 'Lost PP Certificate',
     status: 'Approved',
-    priority: 'Medium',
     customerName: 'RABIUL ISLAM SAHIDUL ISLAM',
     trackingNumber: 'L-P542688282',
     passportNumber: '',
@@ -127,6 +127,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 200,
     due: 0,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '7',
@@ -134,7 +135,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'Lost PP Certificate',
     status: 'Approved',
-    priority: 'Medium',
     customerName: 'MD HALIMUR RAHMAN',
     trackingNumber: 'L-P542688318',
     passportNumber: '',
@@ -144,6 +144,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 200,
     due: 0,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '8',
@@ -151,7 +152,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'MONIR',
     workOfType: 'Lost PP Certificate',
     status: 'Approved',
-    priority: 'Low',
     customerName: 'KOWSOR ANSWARI SAMIR UDDIN',
     trackingNumber: 'L-P542688357',
     passportNumber: '',
@@ -161,6 +161,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 200,
     due: 0,
     isArchived: true,
+    isTrashed: false,
   },
   {
     id: '9',
@@ -168,7 +169,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'MONIR',
     workOfType: 'Lost PP Certificate',
     status: 'Approved',
-    priority: 'Medium',
     customerName: 'EMON BHUIYAN',
     trackingNumber: 'L-P542688943',
     passportNumber: '',
@@ -178,6 +178,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 150,
     due: 50,
     isArchived: false,
+    isTrashed: false,
   },
   {
     id: '10',
@@ -185,7 +186,6 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     workBy: 'AINUL',
     workOfType: 'ID TYPE',
     status: 'Waiting Delivery',
-    priority: 'Medium',
     customerName: 'Mohammad Maraj',
     trackingNumber: '0102611132282025537737095',
     passportNumber: '',
@@ -195,6 +195,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     advance: 350,
     due: 0,
     isArchived: false,
+    isTrashed: false,
   },
 ];
 

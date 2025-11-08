@@ -10,7 +10,8 @@ interface WorkItemRowProps {
   isSelectionMode: boolean;
   onToggleSelection: (id: string) => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: () => void; // This is now Move to Trash
+  onRestore: () => void;
   onArchive: () => Promise<void>;
   onUnarchive: () => void;
   onStatusChange: (id: string, status: string) => Promise<void>;
@@ -63,7 +64,7 @@ const getTrackingLink = (workType: string): string | null => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
@@ -100,6 +101,16 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
       year: '2-digit',
     });
   };
+
+  const getTimeAgo = (dateStr: string, dayCount: number) => {
+    if (!dateStr || dayCount < 0) return '';
+    if (dayCount === 0) {
+        const date = new Date(dateStr);
+        return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+    if (dayCount === 1) return 'Yesterday';
+    return `${dayCount} days ago`;
+  };
   
   const colorClass = getWorkTypeColorClass(item.workOfType);
   
@@ -132,9 +143,15 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
     }
   };
 
-  const handleDeleteClick = () => {
-    if (window.confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+  const handleTrashClick = () => {
+    if (window.confirm('Are you sure you want to move this item to the trash? It will be permanently deleted after 30 days.')) {
         onDelete();
+    }
+  };
+  
+  const handleRestoreClick = () => {
+    if (window.confirm('Are you sure you want to restore this item?')) {
+        onRestore();
     }
   };
   
@@ -184,27 +201,25 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
     if (item.due < item.salesPrice) return 'text-amber-600 dark:text-amber-500';
     return 'text-red-600 dark:text-red-500';
   };
-  
-  const getPriorityBadgeClass = () => {
-    switch (item.priority) {
-      case 'High':
-        return 'bg-red-100 text-red-700 ring-red-600/20 dark:bg-red-900/50 dark:text-red-300 dark:ring-red-500/20';
-      case 'Medium':
-        return 'bg-amber-100 text-amber-700 ring-amber-600/20 dark:bg-amber-900/50 dark:text-amber-300 dark:ring-amber-500/20';
-      case 'Low':
-        return 'bg-slate-100 text-slate-700 ring-slate-600/20 dark:bg-slate-700/50 dark:text-slate-300 dark:ring-slate-500/20';
-      default:
-        return 'bg-gray-100 text-gray-700 ring-gray-600/20 dark:bg-gray-900/50 dark:text-gray-300 dark:ring-gray-500/20';
-    }
-  };
 
+  const getDaysUntilDeletion = (trashedAt: string | undefined): number | null => {
+    if (!trashedAt) return null;
+    const trashedDate = new Date(trashedAt);
+    const today = new Date();
+    const diffTime = today.getTime() - trashedDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const daysRemaining = 30 - diffDays;
+    return Math.max(0, daysRemaining);
+  };
+  
+  const daysRemaining = getDaysUntilDeletion(item.trashedAt);
 
   return (
     <tr 
         data-item-id={item.id}
         className={`${
           isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'
-        } hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
+        } ${item.isTrashed ? 'opacity-60' : ''} hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
     >
       {isSelectionMode && (
         <td className="relative px-7 sm:w-12 sm:px-6 align-top pt-4">
@@ -214,17 +229,18 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
                 checked={isSelected}
                 onChange={() => onToggleSelection(item.id!)}
                 aria-label={`Select item ${item.customerName}`}
+                disabled={item.isTrashed}
             />
         </td>
       )}
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-900 dark:text-slate-100 align-top">
         <div className="font-medium">{formatDate(item.dateOfWork)}</div>
-        <div className="text-xs text-slate-500 dark:text-slate-400">{item.dayCount} days ago</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{getTimeAgo(item.dateOfWork, item.dayCount)}</div>
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workBy}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workOfType}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
-        {isEditingStatus ? (
+        {isEditingStatus && !item.isTrashed ? (
           <select
             value={displayStatus}
             onChange={(e) => handleStatusUpdate(e.target.value)}
@@ -242,20 +258,20 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
           </select>
         ) : (
           <button
-            onClick={() => !isSaving && isEditMode && setIsEditingStatus(true)}
-            disabled={isSaving || !isEditMode}
+            onClick={() => !isSaving && isEditMode && !item.isTrashed && setIsEditingStatus(true)}
+            disabled={isSaving || !isEditMode || item.isTrashed}
             className="group w-full flex items-center text-left rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:cursor-not-allowed"
-            title={isEditMode ? "Click to change status" : ""}
+            title={isEditMode && !item.isTrashed ? "Click to change status" : ""}
           >
             <StatusBadge status={displayStatus} />
             {isSaving && <span className="text-xs ml-2 animate-pulse text-slate-500 dark:text-slate-400">Saving...</span>}
           </button>
         )}
-      </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
-        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getPriorityBadgeClass()}`}>
-            {item.priority}
-        </span>
+         {item.isTrashed && daysRemaining !== null && (
+            <div className="mt-1 text-xs text-red-700 dark:text-red-400">
+                Deletes in {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
+            </div>
+        )}
       </td>
       <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         <div className="font-medium text-slate-900 dark:text-slate-100">{item.customerName}</div>
@@ -334,12 +350,16 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 align-top">
         {isEditMode && (
           <div className="flex justify-end items-center gap-1">
-              {!item.isArchived ? (
+              {item.isTrashed ? (
+                  <button onClick={handleRestoreClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Restore">
+                      <UnarchiveIcon className="h-4 w-4" />
+                  </button>
+              ) : !item.isArchived ? (
                 <>
                   <button onClick={onEdit} className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md transition-colors" title="Edit">
                       <EditIcon className="h-4 w-4" />
                   </button>
-                  <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                  <button onClick={handleTrashClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Move to Trash">
                       <DeleteIcon className="h-4 w-4" />
                   </button>
                   {(item.status === 'Approved' || item.status === 'Rejected') && (
@@ -353,7 +373,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
                       <button onClick={handleUnarchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-500 p-1.5 rounded-md transition-colors" title="Unarchive">
                           <UnarchiveIcon className="h-4 w-4" />
                       </button>
-                      <button onClick={handleDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete">
+                      <button onClick={handleTrashClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Move to Trash">
                           <DeleteIcon className="h-4 w-4" />
                       </button>
                   </>
