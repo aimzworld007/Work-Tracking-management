@@ -43,6 +43,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 100,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '2',
@@ -60,6 +61,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 0,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '3',
@@ -77,6 +79,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 150,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '4',
@@ -94,6 +97,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 1000,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '5',
@@ -111,6 +115,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 300,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '6',
@@ -128,6 +133,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 0,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '7',
@@ -145,6 +151,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 0,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '8',
@@ -162,6 +169,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 0,
     isArchived: true,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '9',
@@ -179,6 +187,7 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 50,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
   {
     id: '10',
@@ -196,8 +205,9 @@ export const INITIAL_WORK_ITEMS: WorkItem[] = [
     due: 0,
     isArchived: false,
     isTrashed: false,
+    customerCalled: false,
   },
 ];
 
 const allWorkBy = INITIAL_WORK_ITEMS.map(item => item.workBy).filter(Boolean);
-export const INITIAL_WORK_BY_OPTIONS = [...new Set(allWorkBy)];
+export const INITIAL_WORK_BY_OPTIONS = [...new Set(allWorkBy), 'alam bhi'];

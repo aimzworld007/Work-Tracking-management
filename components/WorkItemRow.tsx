@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import StatusBadge from './StatusBadge';
@@ -15,6 +14,7 @@ interface WorkItemRowProps {
   onArchive: () => Promise<void>;
   onUnarchive: () => void;
   onStatusChange: (id: string, status: string) => Promise<void>;
+  onCustomerCalledToggle: (id: string, called: boolean) => void;
   statusOptions: string[];
   isEditMode: boolean;
 }
@@ -64,7 +64,7 @@ const getTrackingLink = (workType: string): string | null => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, statusOptions, isEditMode }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
@@ -334,6 +334,17 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
                 </div>
             </div>
         </div>
+      </td>
+       <td className="whitespace-nowrap px-3 py-4 text-center align-top">
+        <input
+            type="checkbox"
+            className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            checked={item.customerCalled || false}
+            onChange={(e) => onCustomerCalledToggle(item.id!, e.target.checked)}
+            disabled={!isEditMode || item.isTrashed}
+            title={isEditMode && !item.isTrashed ? (item.customerCalled ? 'Mark as not called' : 'Mark as called') : 'Customer call status'}
+            aria-label={`Customer ${item.customerName} called status`}
+        />
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         <dl className="grid grid-cols-2 gap-x-2 text-right">

@@ -19,4 +19,5 @@ export interface WorkItem {
   isArchived: boolean;
   isTrashed: boolean;
   trashedAt?: string;
+  customerCalled?: boolean;
 }

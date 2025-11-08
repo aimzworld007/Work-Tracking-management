@@ -145,6 +145,7 @@ const App: React.FC = () => {
           advance: data.advance || 0,
           due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
           dayCount: calculateDayCount(data.dateOfWork),
+          customerCalled: data.customerCalled || false,
         });
       });
       setWorkItems(items);
@@ -278,7 +279,7 @@ const App: React.FC = () => {
   const handleOpenImportModal = () => setIsImportModalOpen(true);
   const handleCloseImportModal = () => setIsImportModalOpen(false);
 
-  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due' | 'isTrashed' | 'trashedAt'> & { id?: string }) => {
+  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due' | 'isTrashed' | 'trashedAt' | 'customerCalled'> & { id?: string }) => {
     const due = (Number(itemToSave.salesPrice) || 0) - (Number(itemToSave.advance) || 0);
     const dataToSaveWithDue = { ...itemToSave, due };
     try {
@@ -305,6 +306,7 @@ const App: React.FC = () => {
           dateOfWork: selectedDate.toISOString(),
           isArchived: false,
           isTrashed: false,
+          customerCalled: false,
         });
       }
       
@@ -377,7 +379,7 @@ const App: React.FC = () => {
       const batch = db.batch();
       itemsToSave.forEach(item => {
         const docRef = db.collection("work-items").doc();
-        batch.set(docRef, { ...item, isArchived: false, isTrashed: false });
+        batch.set(docRef, { ...item, isArchived: false, isTrashed: false, customerCalled: false });
       });
       await batch.commit();
 
@@ -453,6 +455,15 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Error updating status: ", error);
       alert("Failed to update status. Please try again.");
+    }
+  };
+  
+  const handleCustomerCalledToggle = async (id: string, called: boolean) => {
+    try {
+        await db.collection("work-items").doc(id).update({ customerCalled: called });
+    } catch (error) {
+        console.error("Error updating customer called status: ", error);
+        alert("Failed to update status. Please try again.");
     }
   };
   
@@ -728,6 +739,9 @@ const App: React.FC = () => {
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
                     <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
+                    <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-white bg-violet-500">
+                        Called
+                    </th>
                     <SortableHeader column="due" title="Financials" thClassName="bg-rose-500 hover:bg-rose-600" />
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
                         <span className="sr-only">Actions</span>
@@ -748,6 +762,7 @@ const App: React.FC = () => {
                       onArchive={() => handleArchive(item.id!)}
                       onUnarchive={() => handleUnarchive(item.id!)}
                       onStatusChange={handleStatusChange}
+                      onCustomerCalledToggle={handleCustomerCalledToggle}
                       statusOptions={statusOptions}
                       isEditMode={isEditMode}
                     />
