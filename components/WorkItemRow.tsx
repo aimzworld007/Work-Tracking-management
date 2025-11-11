@@ -4,6 +4,7 @@ import StatusBadge from './StatusBadge';
 import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon, CopyIcon, CheckIcon } from './icons';
 
 interface WorkItemRowProps {
+  serialNumber: number;
   item: WorkItem;
   isSelected: boolean;
   isSelectionMode: boolean;
@@ -64,7 +65,7 @@ const getTrackingLink = (workType: string): string | null => {
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelected, isSelectionMode, onToggleSelection, onEdit, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
@@ -233,6 +234,9 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ item, isSelected, isSelection
             />
         </td>
       )}
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-400 align-top text-center font-medium">
+        {serialNumber}
+      </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-900 dark:text-slate-100 align-top">
         <div className="font-medium">{formatDate(item.dateOfWork)}</div>
         <div className="text-xs text-slate-500 dark:text-slate-400">{getTimeAgo(item.dateOfWork, item.dayCount)}</div>

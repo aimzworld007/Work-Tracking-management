@@ -734,6 +734,7 @@ const App: React.FC = () => {
                             />
                         </th>
                     )}
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-slate-600">S.N</th>
                     <SortableHeader column="dateOfWork" title="Date / Time" thClassName="bg-sky-500 hover:bg-sky-600" />
                     <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
@@ -749,9 +750,10 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {paginatedItems.map((item) => (
+                  {paginatedItems.map((item, index) => (
                     <WorkItemRow
                       key={item.id}
+                      serialNumber={startIndex + index + 1}
                       item={item}
                       isSelected={selectedItems.includes(item.id!)}
                       isSelectionMode={isSelectionMode}
