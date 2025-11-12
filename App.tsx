@@ -366,12 +366,20 @@ const App: React.FC = () => {
   const handleCloseImportModal = () => setIsImportModalOpen(false);
 
   const handleSave = async (itemToSave: Partial<WorkItem>) => {
-    const due = (Number(itemToSave.salesPrice) || 0) - (Number(itemToSave.advance) || 0);
-    const dataToSaveWithDue = { ...itemToSave, due };
+    const salesPrice = Number(itemToSave.salesPrice) || 0;
+    const advance = Number(itemToSave.advance) || 0;
+    const due = salesPrice - advance;
+
+    const dataToSave = { 
+        ...itemToSave, 
+        salesPrice,
+        advance,
+        due 
+    };
 
     try {
-      if (dataToSaveWithDue.id) {
-        const { id, ...dataToUpdate } = dataToSaveWithDue;
+      if (dataToSave.id) {
+        const { id, ...dataToUpdate } = dataToSave;
         const docRef = db.collection("work-items").doc(id);
 
         if (dataToUpdate.dateOfWork) {
@@ -384,14 +392,16 @@ const App: React.FC = () => {
         
         await docRef.update(dataToUpdate);
       } else {
-        const selectedDate = new Date(`${dataToSaveWithDue.dateOfWork}T00:00:00`);
+        const selectedDate = new Date(`${dataToSave.dateOfWork}T00:00:00`);
         const now = new Date();
         selectedDate.setHours(now.getHours());
         selectedDate.setMinutes(now.getMinutes());
         selectedDate.setSeconds(now.getSeconds());
 
+        const { id, ...finalData } = dataToSave;
+
         await db.collection("work-items").add({ 
-          ...dataToSaveWithDue,
+          ...finalData,
           dateOfWork: selectedDate.toISOString(),
           isArchived: false,
           isTrashed: false,
