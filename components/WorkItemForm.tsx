@@ -51,8 +51,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     mobileWhatsappNumber: '',
     salesPrice: 0,
     advance: 0,
-    reminderDate: '',
-    reminderNote: '',
   });
   
   const [isCustomWorkType, setIsCustomWorkType] = useState(false);
@@ -73,8 +71,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         mobileWhatsappNumber: item.mobileWhatsappNumber,
         salesPrice: item.salesPrice || 0,
         advance: item.advance || 0,
-        reminderDate: item.reminderDate || '',
-        reminderNote: item.reminderNote || '',
       });
     } else {
        setIsCustomWorkType(false);
@@ -90,8 +86,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            mobileWhatsappNumber: '971',
            salesPrice: 0,
            advance: 0,
-           reminderDate: '',
-           reminderNote: '',
        });
     }
   }, [item, workTypeOptions, statusOptions]);
@@ -119,14 +113,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         return;
     }
     
-    // Ensure empty reminder fields are sent as null/undefined for Firestore
-    const submissionData = {
-        ...formData,
-        reminderDate: formData.reminderDate || null,
-        reminderNote: formData.reminderNote || null,
-    };
-
-    onSave(submissionData);
+    onSave(formData);
   };
 
   const due = (Number(formData.salesPrice) || 0) - (Number(formData.advance) || 0);
@@ -232,32 +219,6 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                             <label htmlFor="mobileWhatsappNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Mobile/WhatsApp Number</label>
                                             <div className="mt-2">
                                                 <input id="mobileWhatsappNumber" type="text" name="mobileWhatsappNumber" placeholder="Mobile/WhatsApp Number" value={formData.mobileWhatsappNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Reminder Section */}
-                                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                                         <h4 className="text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Optional Reminder</h4>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                            <DatePicker
-                                                label="Reminder Date"
-                                                value={formData.reminderDate}
-                                                onChange={(date) => setFormData(prev => ({ ...prev, reminderDate: date }))}
-                                            />
-                                            <div className="md:col-span-2">
-                                                <label htmlFor="reminderNote" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Reminder Note</label>
-                                                <div className="mt-2">
-                                                    <textarea
-                                                        id="reminderNote"
-                                                        name="reminderNote"
-                                                        rows={2}
-                                                        value={formData.reminderNote}
-                                                        onChange={handleChange}
-                                                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                                                        placeholder="Add a note for the reminder..."
-                                                    />
-                                                </div>
                                             </div>
                                         </div>
                                     </div>

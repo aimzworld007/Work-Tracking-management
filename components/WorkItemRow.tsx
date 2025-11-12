@@ -65,16 +65,6 @@ const getTrackingLink = (workType: string): string | null => {
   return null;
 };
 
-const isReminderDue = (reminderDateStr?: string): boolean => {
-    if (!reminderDateStr) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const reminderDate = new Date(reminderDateStr);
-    reminderDate.setHours(0, 0, 0, 0); // Compare dates only
-    return reminderDate <= today;
-};
-
-
 const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelected, isSelectionMode, onToggleSelection, onEdit, onSetReminder, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -111,17 +101,6 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelecte
       month: '2-digit',
       year: '2-digit',
     });
-  };
-  
-  const formatReminderDate = (dateStr?: string) => {
-      if (!dateStr) return null;
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return null;
-       return date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
   };
 
   const getTimeAgo = (dateStr: string, dayCount: number) => {
@@ -235,13 +214,12 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelecte
   };
   
   const daysRemaining = getDaysUntilDeletion(item.trashedAt);
-  const reminderIsDue = isReminderDue(item.reminderDate);
 
   return (
     <tr 
         data-item-id={item.id}
         className={`${
-          isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : reminderIsDue ? 'bg-amber-50 dark:bg-amber-900/20' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'
+          isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'
         } ${item.isTrashed ? 'opacity-60' : ''} hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
     >
       {isSelectionMode && (
@@ -360,19 +338,6 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelecte
                 </div>
             </div>
         </div>
-      </td>
-       <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
-        {item.reminderDate ? (
-          <div className={`flex items-start gap-2 ${reminderIsDue ? 'text-amber-700 dark:text-amber-400' : ''}`}>
-             <BellIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <div className="font-medium text-slate-900 dark:text-slate-100">{formatReminderDate(item.reminderDate)}</div>
-              {item.reminderNote && <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-normal">{item.reminderNote}</div>}
-            </div>
-          </div>
-        ) : (
-          <span className="text-slate-400 dark:text-slate-600">-</span>
-        )}
       </td>
        <td className="whitespace-nowrap px-3 py-4 text-center align-top">
         <input

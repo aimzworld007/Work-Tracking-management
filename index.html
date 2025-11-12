@@ -40,6 +40,14 @@
       }
     </script>
     <style>
+      @keyframes marquee {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-50%); }
+      }
+      .animate-marquee {
+          animation: marquee 30s linear infinite;
+      }
+
       @media print {
         @page {
           size: A4;
@@ -62,6 +70,7 @@
         
         /* Hide non-printable UI elements */
         .container > div:first-child, /* Hides the screen header block */
+        .marquee-container, /* Hides the marquee */
         nav, /* Hides the tabs */
         button[aria-label="Add new work item"], /* Hides the FAB */
         div[role="dialog"] /* Hides modals */

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { WorkItem } from './types';
+import { WorkItem, Reminder } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ReminderForm from './components/ReminderForm';
+import ReminderMarquee from './components/ReminderMarquee';
+import RemindersTable from './components/RemindersTable';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
 import HeaderActions from './components/HeaderActions';
@@ -15,7 +17,7 @@ import Pagination from './components/Pagination';
 import Login from './components/Login';
 
 
-const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Archived', 'Trash'];
+const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Reminders', 'Archived', 'Trash'];
 
 const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string } } = {
   'All Items':        { base: 'bg-slate-500 hover:bg-slate-600', active: 'bg-slate-700 ring-slate-500', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
@@ -24,6 +26,7 @@ const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string
   'Rejected':         { base: 'bg-red-500 hover:bg-red-600',     active: 'bg-red-700 ring-red-500',     badge: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200' },
   'Waiting Delivery': { base: 'bg-purple-500 hover:bg-purple-600',active: 'bg-purple-700 ring-purple-500',badge: 'bg-purple-200 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' },
   'PAID ONLY':        { base: 'bg-cyan-500 hover:bg-cyan-600',   active: 'bg-cyan-700 ring-cyan-500',   badge: 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200' },
+  'Reminders':        { base: 'bg-amber-500 hover:bg-amber-600', active: 'bg-amber-700 ring-amber-500', badge: 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' },
   'Archived':         { base: 'bg-gray-500 hover:bg-gray-600',  active: 'bg-gray-700 ring-gray-500',   badge: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
   'Trash':            { base: 'bg-stone-500 hover:bg-stone-600',  active: 'bg-stone-700 ring-stone-500',   badge: 'bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-200' },
 };
@@ -35,12 +38,14 @@ const App: React.FC = () => {
   const [loginError, setLoginError] = useState('');
 
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReminderFormOpen, setIsReminderFormOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<WorkItem | null>(null);
+  const [currentReminder, setCurrentReminder] = useState<Reminder | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TABS[0]);
   
@@ -130,6 +135,9 @@ const App: React.FC = () => {
       const items: WorkItem[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        // Exclude old 'REMINDER' type items from the main list
+        if (data.workOfType === 'REMINDER') return;
+        
         items.push({
           id: doc.id,
           dateOfWork: data.dateOfWork || '',
@@ -148,13 +156,33 @@ const App: React.FC = () => {
           due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
           dayCount: calculateDayCount(data.dateOfWork),
           customerCalled: data.customerCalled || false,
-          reminderDate: data.reminderDate,
-          reminderNote: data.reminderNote,
         });
       });
       setWorkItems(items);
     });
     
+    return () => unsubscribe();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const q = db.collection("reminders").orderBy("reminderDate", "desc");
+    const unsubscribe = q.onSnapshot((querySnapshot) => {
+        const items: Reminder[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            items.push({
+                id: doc.id,
+                title: data.title,
+                note: data.note,
+                reminderDate: data.reminderDate,
+                isCompleted: data.isCompleted,
+                createdAt: data.createdAt,
+                workItemId: data.workItemId,
+            });
+        });
+        setReminders(items);
+    });
     return () => unsubscribe();
   }, [isAuthenticated]);
   
@@ -183,6 +211,11 @@ const App: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (activeTab === 'Reminders') {
+        setFilteredItems([]); // Not used for reminders tab
+        return;
+    }
+
     let items = [...workItems];
 
     if (searchTerm) {
@@ -280,14 +313,21 @@ const App: React.FC = () => {
     setCurrentItem(null);
   };
 
-  const handleOpenReminderForm = (item: WorkItem | null = null) => {
-    setCurrentItem(item);
+  const handleOpenReminderForm = (item: WorkItem | Reminder | null = null) => {
+    if (item && 'workOfType' in item) { // It's a WorkItem
+        setCurrentItem(item);
+        setCurrentReminder(null);
+    } else { // It's a Reminder or null
+        setCurrentItem(null);
+        setCurrentReminder(item as Reminder | null);
+    }
     setIsReminderFormOpen(true);
   };
 
   const handleCloseReminderForm = () => {
     setIsReminderFormOpen(false);
     setCurrentItem(null);
+    setCurrentReminder(null);
   };
   
   const handleOpenImportModal = () => setIsImportModalOpen(true);
@@ -344,9 +384,42 @@ const App: React.FC = () => {
       console.error("Error saving document: ", error);
     }
     handleCloseModal();
-    handleCloseReminderForm();
   };
   
+  const handleSaveReminder = async (reminderToSave: Partial<Reminder>) => {
+    try {
+        if (reminderToSave.id) {
+            const { id, ...dataToUpdate } = reminderToSave;
+            await db.collection("reminders").doc(id).update(dataToUpdate);
+        } else {
+            await db.collection("reminders").add(reminderToSave);
+        }
+    } catch (error) {
+        console.error("Error saving reminder: ", error);
+        alert("An error occurred while saving the reminder.");
+    }
+    handleCloseReminderForm();
+  };
+
+  const handleDeleteReminder = async (id: string) => {
+    try {
+        await db.collection("reminders").doc(id).delete();
+    } catch (error) {
+        console.error("Error deleting reminder: ", error);
+        alert("Failed to delete reminder.");
+    }
+    handleCloseReminderForm(); // Close form if open for this reminder
+  };
+
+  const handleToggleReminderComplete = async (id: string, isCompleted: boolean) => {
+    try {
+        await db.collection("reminders").doc(id).update({ isCompleted });
+    } catch (error) {
+        console.error("Error updating reminder status: ", error);
+        alert("Failed to update reminder status.");
+    }
+  };
+
   const handleImport = async (data: string) => {
     const lines = data.trim().split('\n');
     if (lines.length > 0) {
@@ -573,6 +646,7 @@ const App: React.FC = () => {
     if (tab === 'All Items') return workItems.filter(item => !item.isArchived && !item.isTrashed).length;
     if (tab === 'Archived') return workItems.filter(item => item.isArchived && !item.isTrashed).length;
     if (tab === 'Trash') return workItems.filter(item => item.isTrashed).length;
+    if (tab === 'Reminders') return reminders.length;
     return workItems.filter(item => item.status === tab && !item.isArchived && !item.isTrashed).length;
   }
   
@@ -708,6 +782,8 @@ const App: React.FC = () => {
           </div>
         )}
 
+        <ReminderMarquee reminders={reminders} />
+
         <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10 overflow-hidden">
             <div className="border-b border-slate-200 dark:border-slate-800">
                 <nav className="flex gap-x-2 overflow-x-auto p-2">
@@ -740,77 +816,88 @@ const App: React.FC = () => {
                     })}
                 </nav>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-                <thead>
-                  <tr>
-                    {isSelectionMode && (
-                        <th scope="col" className="relative px-7 sm:w-12 sm:px-6 bg-slate-50 dark:bg-slate-800/50">
-                            <input
-                                type="checkbox"
-                                className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
-                                ref={headerCheckboxRef}
-                                onChange={handleToggleAllSelection}
-                            />
-                        </th>
-                    )}
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-slate-600">S.N</th>
-                    <SortableHeader column="dateOfWork" title="Date / Time" thClassName="bg-sky-500 hover:bg-sky-600" />
-                    <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
-                    <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
-                    <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
-                    <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
-                    <SortableHeader column="reminderDate" title="Reminder" thClassName="bg-lime-500 hover:bg-lime-600" />
-                    <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-white bg-violet-500">
-                        Called
-                    </th>
-                    <SortableHeader column="due" title="Financials" thClassName="bg-rose-500 hover:bg-rose-600" />
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
-                        <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {paginatedItems.map((item, index) => (
-                    <WorkItemRow
-                      key={item.id}
-                      serialNumber={startIndex + index + 1}
-                      item={item}
-                      isSelected={selectedItems.includes(item.id!)}
-                      isSelectionMode={isSelectionMode}
-                      onToggleSelection={handleToggleItemSelection}
-                      onEdit={() => handleOpenModal(item)}
-                      onSetReminder={() => handleOpenReminderForm(item)}
-                      onDelete={() => handleMoveToTrash(item.id!)}
-                      onRestore={() => handleRestoreFromTrash(item.id!)}
-                      onArchive={() => handleArchive(item.id!)}
-                      onUnarchive={() => handleUnarchive(item.id!)}
-                      onStatusChange={handleStatusChange}
-                      onCustomerCalledToggle={handleCustomerCalledToggle}
-                      statusOptions={statusOptions}
-                      isEditMode={isEditMode}
-                    />
-                  ))}
-                </tbody>
-              </table>
-               {filteredItems.length === 0 && (
-                <div className="text-center py-16">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    </svg>
-                  <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-slate-200">No work items</h3>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Get started by creating a new work item.</p>
-                </div>
-              )}
-            </div>
-             {filteredItems.length > 0 && (
-                <Pagination
-                    currentPage={currentPage}
-                    totalItems={filteredItems.length}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={setCurrentPage}
-                    onItemsPerPageChange={setItemsPerPage}
+            {activeTab === 'Reminders' ? (
+                <RemindersTable
+                    reminders={reminders}
+                    onEdit={handleOpenReminderForm}
+                    onDelete={handleDeleteReminder}
+                    onToggleComplete={handleToggleReminderComplete}
+                    isEditMode={isEditMode}
                 />
+            ) : (
+                <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                        <thead>
+                          <tr>
+                            {isSelectionMode && (
+                                <th scope="col" className="relative px-7 sm:w-12 sm:px-6 bg-slate-50 dark:bg-slate-800/50">
+                                    <input
+                                        type="checkbox"
+                                        className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500"
+                                        ref={headerCheckboxRef}
+                                        onChange={handleToggleAllSelection}
+                                    />
+                                </th>
+                            )}
+                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-slate-600">S.N</th>
+                            <SortableHeader column="dateOfWork" title="Date / Time" thClassName="bg-sky-500 hover:bg-sky-600" />
+                            <SortableHeader column="workBy" title="Work By" thClassName="bg-teal-500 hover:bg-teal-600" />
+                            <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
+                            <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
+                            <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
+                            <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-white bg-violet-500">
+                                Called
+                            </th>
+                            <SortableHeader column="due" title="Financials" thClassName="bg-rose-500 hover:bg-rose-600" />
+                            <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
+                                <span className="sr-only">Actions</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                          {paginatedItems.map((item, index) => (
+                            <WorkItemRow
+                              key={item.id}
+                              serialNumber={startIndex + index + 1}
+                              item={item}
+                              isSelected={selectedItems.includes(item.id!)}
+                              isSelectionMode={isSelectionMode}
+                              onToggleSelection={handleToggleItemSelection}
+                              onEdit={() => handleOpenModal(item)}
+                              onSetReminder={() => handleOpenReminderForm(item)}
+                              onDelete={() => handleMoveToTrash(item.id!)}
+                              onRestore={() => handleRestoreFromTrash(item.id!)}
+                              onArchive={() => handleArchive(item.id!)}
+                              onUnarchive={() => handleUnarchive(item.id!)}
+                              onStatusChange={handleStatusChange}
+                              onCustomerCalledToggle={handleCustomerCalledToggle}
+                              statusOptions={statusOptions}
+                              isEditMode={isEditMode}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                       {filteredItems.length === 0 && (
+                        <div className="text-center py-16">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                          <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-slate-200">No work items</h3>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Get started by creating a new work item.</p>
+                        </div>
+                      )}
+                    </div>
+                    {filteredItems.length > 0 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalItems={filteredItems.length}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                            onItemsPerPageChange={setItemsPerPage}
+                        />
+                    )}
+                </>
             )}
         </div>
         
@@ -827,9 +914,11 @@ const App: React.FC = () => {
         
         {isReminderFormOpen && (
             <ReminderForm
-                item={currentItem}
-                onSave={handleSave}
+                linkedWorkItem={currentItem}
+                existingReminder={currentReminder}
+                onSave={handleSaveReminder}
                 onClose={handleCloseReminderForm}
+                onDelete={handleDeleteReminder}
             />
         )}
 

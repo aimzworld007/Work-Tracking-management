@@ -20,6 +20,15 @@ export interface WorkItem {
   isTrashed: boolean;
   trashedAt?: string;
   customerCalled?: boolean;
-  reminderDate?: string; // Optional: ISO date string for reminder
-  reminderNote?: string; // Optional: A note for the reminder
+}
+
+// Defines the structure of a reminder item.
+export interface Reminder {
+    id?: string;
+    title: string;
+    note?: string;
+    reminderDate: string; // ISO date string
+    isCompleted: boolean;
+    createdAt: string; // ISO datetime string
+    workItemId?: string; // Optional link to a work item
 }
