@@ -13,6 +13,16 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Sync display date with external value changes, e.g., when editing an existing item.
+    if (value) {
+        const newDate = new Date(`${value}T00:00:00`);
+        if (newDate.getTime() !== displayDate.getTime()) {
+            setDisplayDate(newDate);
+        }
+    }
+  }, [value, displayDate]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -77,8 +87,8 @@ const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange }) => {
       </div>
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-slate-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-4">
-          <div className="flex justify-between items-center mb-4">
+        <div className="absolute z-10 mt-1 w-72 rounded-md bg-white dark:bg-slate-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-3">
+          <div className="flex justify-between items-center mb-3">
             <button type="button" onClick={() => changeMonth(-1)} className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <ChevronLeftIcon className="w-5 h-5" />
             </button>
