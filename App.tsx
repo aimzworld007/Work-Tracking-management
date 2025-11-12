@@ -185,7 +185,7 @@ const App: React.FC = () => {
     );
     
     return () => unsubscribe();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, firestoreError]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -216,7 +216,7 @@ const App: React.FC = () => {
       }
     );
     return () => unsubscribe();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, firestoreError]);
   
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -572,6 +572,15 @@ const App: React.FC = () => {
         console.error("Error restoring item from trash: ", error);
     }
   };
+  
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      await db.collection("work-items").doc(id).delete();
+    } catch (error) {
+      console.error("Error permanently deleting item: ", error);
+      alert("Failed to permanently delete item. Please try again.");
+    }
+  };
 
   const handleArchive = async (id: string) => {
     try {
@@ -741,6 +750,18 @@ const App: React.FC = () => {
     }
     return items;
   }, [reminders, reminderSortColumn, reminderSortDirection]);
+  
+  const remindersByWorkItemId = useMemo(() => {
+    const map = new Map<string, Reminder[]>();
+    reminders.forEach(r => {
+        if (r.workItemId) {
+            const existing = map.get(r.workItemId) || [];
+            existing.push(r);
+            map.set(r.workItemId, existing);
+        }
+    });
+    return map;
+  }, [reminders]);
 
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(prev => {
@@ -949,6 +970,7 @@ const App: React.FC = () => {
                               key={item.id}
                               serialNumber={startIndex + index + 1}
                               item={item}
+                              reminders={remindersByWorkItemId.get(item.id!) || []}
                               isSelected={selectedItems.includes(item.id!)}
                               isSelectionMode={isSelectionMode}
                               onToggleSelection={handleToggleItemSelection}
@@ -956,6 +978,7 @@ const App: React.FC = () => {
                               onSetReminder={() => handleOpenReminderForm(item)}
                               onDelete={() => handleMoveToTrash(item.id!)}
                               onRestore={() => handleRestoreFromTrash(item.id!)}
+                              onPermanentDelete={() => handlePermanentDelete(item.id!)}
                               onArchive={() => handleArchive(item.id!)}
                               onUnarchive={() => handleUnarchive(item.id!)}
                               onStatusChange={handleStatusChange}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { WorkItem } from '../types';
+import { WorkItem, Reminder } from '../types';
 import StatusBadge from './StatusBadge';
-import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon, CopyIcon, CheckIcon, BellIcon } from './icons';
+import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon, CopyIcon, CheckIcon, BellIcon, DeleteForeverIcon } from './icons';
 
 interface WorkItemRowProps {
   serialNumber: number;
   item: WorkItem;
+  reminders: Reminder[];
   isSelected: boolean;
   isSelectionMode: boolean;
   onToggleSelection: (id: string) => void;
@@ -13,6 +14,7 @@ interface WorkItemRowProps {
   onSetReminder: () => void;
   onDelete: () => void; // This is now Move to Trash
   onRestore: () => void;
+  onPermanentDelete: () => void;
   onArchive: () => Promise<void>;
   onUnarchive: () => void;
   onStatusChange: (id: string, status: string) => Promise<void>;
@@ -65,19 +67,46 @@ const getTrackingLink = (workType: string): string | null => {
   return null;
 };
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelected, isSelectionMode, onToggleSelection, onEdit, onSetReminder, onDelete, onRestore, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
+const getReminderStatus = (reminders: Reminder[]): { color: string, tooltip: string } | null => {
+    const incompleteReminders = reminders.filter(r => !r.isCompleted);
+    if (incompleteReminders.length === 0) return null;
+
+    incompleteReminders.sort((a, b) => new Date(a.reminderDate).getTime() - new Date(b.reminderDate).getTime());
+    const mostUrgent = incompleteReminders[0];
+    
+    const mostUrgentDate = new Date(mostUrgent.reminderDate);
+    mostUrgentDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let color = 'blue-500';
+    let tooltip = `Upcoming: "${mostUrgent.title}" on ${mostUrgentDate.toLocaleDateString('en-GB')}`;
+
+    if (mostUrgentDate < today) {
+        color = 'red-500';
+        tooltip = `OVERDUE: "${mostUrgent.title}" was due on ${mostUrgentDate.toLocaleDateString('en-GB')}`;
+    } else if (mostUrgentDate.getTime() === today.getTime()) {
+        color = 'amber-500';
+        tooltip = `Due Today: "${mostUrgent.title}"`;
+    }
+
+    return { color, tooltip };
+};
+
+
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders, isSelected, isSelectionMode, onToggleSelection, onEdit, onSetReminder, onDelete, onRestore, onPermanentDelete, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
-    // When the canonical status from props changes, it means our optimistic update
-    // has been confirmed and persisted. We can clear the optimistic state.
     setOptimisticStatus(null);
   }, [item.status]);
   
   const displayStatus = optimisticStatus || item.status;
+  const reminderStatus = getReminderStatus(reminders);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
@@ -153,6 +182,12 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelecte
   const handleRestoreClick = () => {
     if (window.confirm('Are you sure you want to restore this item?')) {
         onRestore();
+    }
+  };
+  
+  const handlePermanentDeleteClick = () => {
+    if (window.confirm('Are you sure you want to PERMANENTLY delete this item? This action cannot be undone.')) {
+        onPermanentDelete();
     }
   };
   
@@ -366,16 +401,24 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, isSelecte
         {isEditMode && (
           <div className="flex justify-end items-center gap-1">
               {item.isTrashed ? (
+                <>
                   <button onClick={handleRestoreClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Restore">
                       <UnarchiveIcon className="h-4 w-4" />
                   </button>
+                   <button onClick={handlePermanentDeleteClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Delete Forever">
+                      <DeleteForeverIcon className="h-4 w-4" />
+                  </button>
+                </>
               ) : !item.isArchived ? (
                 <>
                   <button onClick={onEdit} className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md transition-colors" title="Edit">
                       <EditIcon className="h-4 w-4" />
                   </button>
-                  <button onClick={onSetReminder} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 p-1.5 rounded-md transition-colors" title="Set Reminder">
+                  <button onClick={onSetReminder} className="relative text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 p-1.5 rounded-md transition-colors" title="Set Reminder">
                       <BellIcon className="h-4 w-4" />
+                      {reminderStatus && (
+                          <span className={`absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full ring-2 ring-white dark:ring-slate-900 bg-${reminderStatus.color}`} title={reminderStatus.tooltip}></span>
+                      )}
                   </button>
                   <button onClick={handleTrashClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Move to Trash">
                       <DeleteIcon className="h-4 w-4" />
