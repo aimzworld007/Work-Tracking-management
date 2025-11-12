@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WorkItem, Reminder } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
@@ -51,6 +51,9 @@ const App: React.FC = () => {
   
   const [sortColumn, setSortColumn] = useState<keyof WorkItem>('dateOfWork');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const [reminderSortColumn, setReminderSortColumn] = useState<keyof Reminder>('reminderDate');
+  const [reminderSortDirection, setReminderSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const [workTypeOptions, setWorkTypeOptions] = useState<string[]>(staticWorkTypeOptions);
   const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
@@ -659,6 +662,39 @@ const App: React.FC = () => {
       }
   };
 
+  const handleReminderSort = (column: keyof Reminder) => {
+    if (reminderSortColumn === column) {
+        setReminderSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+        setReminderSortColumn(column);
+        setReminderSortDirection('desc'); // Default to descending for new columns
+    }
+  };
+
+  const sortedReminders = useMemo(() => {
+    let items = [...reminders];
+    if (reminderSortColumn) {
+        items.sort((a, b) => {
+            const aValue = a[reminderSortColumn];
+            const bValue = b[reminderSortColumn];
+
+            if (aValue === bValue) return 0;
+            if (aValue === null || aValue === undefined) return 1;
+            if (bValue === null || bValue === undefined) return -1;
+
+            let comparison = 0;
+            if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+                comparison = Number(aValue) - Number(bValue); // false (0) before true (1)
+            } else {
+                comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
+            }
+
+            return reminderSortDirection === 'asc' ? comparison : -comparison;
+        });
+    }
+    return items;
+  }, [reminders, reminderSortColumn, reminderSortDirection]);
+
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(prev => {
         const newState = !prev;
@@ -818,11 +854,14 @@ const App: React.FC = () => {
             </div>
             {activeTab === 'Reminders' ? (
                 <RemindersTable
-                    reminders={reminders}
+                    reminders={sortedReminders}
                     onEdit={handleOpenReminderForm}
                     onDelete={handleDeleteReminder}
                     onToggleComplete={handleToggleReminderComplete}
                     isEditMode={isEditMode}
+                    sortColumn={reminderSortColumn}
+                    sortDirection={reminderSortDirection}
+                    onSort={handleReminderSort}
                 />
             ) : (
                 <>

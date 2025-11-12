@@ -1,7 +1,7 @@
 import React from 'react';
 import { Reminder } from '../types';
 import ReminderRow from './ReminderRow';
-import { BellIcon } from './icons';
+import { BellIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './icons';
 
 interface RemindersTableProps {
     reminders: Reminder[];
@@ -9,18 +9,41 @@ interface RemindersTableProps {
     onDelete: (id: string) => void;
     onToggleComplete: (id: string, completed: boolean) => void;
     isEditMode: boolean;
+    sortColumn: keyof Reminder | null;
+    sortDirection: 'asc' | 'desc';
+    onSort: (column: keyof Reminder) => void;
 }
 
-const RemindersTable: React.FC<RemindersTableProps> = ({ reminders, onEdit, onDelete, onToggleComplete, isEditMode }) => {
+const RemindersTable: React.FC<RemindersTableProps> = ({ reminders, onEdit, onDelete, onToggleComplete, isEditMode, sortColumn, sortDirection, onSort }) => {
+    
+    const SortableHeader = ({ column, title, thClassName = '', buttonClassName = '' }: { column: keyof Reminder, title: string, thClassName?: string, buttonClassName?: string }) => {
+        const isSorting = sortColumn === column;
+        const Icon = isSorting ? (sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon) : ChevronUpDownIcon;
+
+        return (
+            <th scope="col" className={`py-0 text-left text-sm font-semibold text-white transition-colors duration-200 ${thClassName}`}>
+                <button
+                    onClick={() => onSort(column)}
+                    className={`group w-full h-full flex items-center justify-start gap-1 px-3 py-3.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-inset ${buttonClassName}`}
+                >
+                    <span>{title}</span>
+                    <span className={`transition-opacity ${isSorting ? 'opacity-100' : 'opacity-50 group-hover:opacity-100'}`}>
+                        <Icon className="h-4 w-4" />
+                    </span>
+                </button>
+            </th>
+        );
+    };
+
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                 <thead>
                     <tr>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-slate-600">S.N</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-amber-500">Date</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-amber-500">Title & Note</th>
-                        <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-white bg-amber-500">Completed</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white bg-slate-600 w-12">S.N</th>
+                        <SortableHeader column="reminderDate" title="Date" thClassName="bg-amber-500 hover:bg-amber-600" />
+                        <SortableHeader column="title" title="Title & Note" thClassName="bg-amber-500 hover:bg-amber-600" />
+                        <SortableHeader column="isCompleted" title="Completed" thClassName="bg-amber-500 hover:bg-amber-600 text-center" buttonClassName="justify-center" />
                         <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right bg-slate-50 dark:bg-slate-800/50">
                             <span className="sr-only">Actions</span>
                         </th>
