@@ -16,6 +16,7 @@ export const WORK_TYPE_OPTIONS = [
   'labor cancel',
   'NUMBER UPDATE',
   'Issue visa',
+  'REMINDER',
 ];
 
 export const INITIAL_STATUS_OPTIONS: string[] = [
@@ -24,6 +25,7 @@ export const INITIAL_STATUS_OPTIONS: string[] = [
   'Rejected',
   'Waiting Delivery',
   'PAID ONLY',
+  'PENDING',
 ];
 
 export const INITIAL_WORK_ITEMS: WorkItem[] = [

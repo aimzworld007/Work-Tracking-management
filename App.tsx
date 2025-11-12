@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { WorkItem } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
+import ReminderForm from './components/ReminderForm';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
 import HeaderActions from './components/HeaderActions';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<WorkItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReminderFormOpen, setIsReminderFormOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<WorkItem | null>(null);
@@ -146,6 +148,8 @@ const App: React.FC = () => {
           due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
           dayCount: calculateDayCount(data.dateOfWork),
           customerCalled: data.customerCalled || false,
+          reminderDate: data.reminderDate,
+          reminderNote: data.reminderNote,
         });
       });
       setWorkItems(items);
@@ -275,22 +279,35 @@ const App: React.FC = () => {
     setIsModalOpen(false);
     setCurrentItem(null);
   };
+
+  const handleOpenReminderForm = (item: WorkItem | null = null) => {
+    setCurrentItem(item);
+    setIsReminderFormOpen(true);
+  };
+
+  const handleCloseReminderForm = () => {
+    setIsReminderFormOpen(false);
+    setCurrentItem(null);
+  };
   
   const handleOpenImportModal = () => setIsImportModalOpen(true);
   const handleCloseImportModal = () => setIsImportModalOpen(false);
 
-  const handleSave = async (itemToSave: Omit<WorkItem, 'id' | 'dayCount' | 'isArchived' | 'due' | 'isTrashed' | 'trashedAt' | 'customerCalled'> & { id?: string }) => {
+  const handleSave = async (itemToSave: Partial<WorkItem>) => {
     const due = (Number(itemToSave.salesPrice) || 0) - (Number(itemToSave.advance) || 0);
     const dataToSaveWithDue = { ...itemToSave, due };
+
     try {
       if (dataToSaveWithDue.id) {
         const { id, ...dataToUpdate } = dataToSaveWithDue;
         const docRef = db.collection("work-items").doc(id);
 
-        const originalItem = workItems.find(w => w.id === id);
-        if (originalItem && originalItem.dateOfWork.includes('T')) {
-            const timePart = originalItem.dateOfWork.split('T')[1];
-            dataToUpdate.dateOfWork = `${dataToUpdate.dateOfWork}T${timePart}`;
+        if (dataToUpdate.dateOfWork) {
+            const originalItem = workItems.find(w => w.id === id);
+            if (originalItem && originalItem.dateOfWork.includes('T')) {
+                const timePart = originalItem.dateOfWork.split('T')[1];
+                dataToUpdate.dateOfWork = `${dataToUpdate.dateOfWork.split('T')[0]}T${timePart}`;
+            }
         }
         
         await docRef.update(dataToUpdate);
@@ -310,21 +327,24 @@ const App: React.FC = () => {
         });
       }
       
-      const optionsDocRef = db.collection('options').doc('appData');
-      if (!workTypeOptions.includes(dataToSaveWithDue.workOfType)) {
-          await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.workOfType) });
-      }
-      if (!statusOptions.includes(dataToSaveWithDue.status)) {
-          await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.status) });
-      }
-      if (dataToSaveWithDue.workBy && !workByOptions.includes(dataToSaveWithDue.workBy)) {
-          await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(dataToSaveWithDue.workBy) });
+      if (itemToSave.workOfType) {
+        const optionsDocRef = db.collection('options').doc('appData');
+        if (!workTypeOptions.includes(itemToSave.workOfType)) {
+            await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(itemToSave.workOfType) });
+        }
+        if (itemToSave.status && !statusOptions.includes(itemToSave.status)) {
+            await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(itemToSave.status) });
+        }
+        if (itemToSave.workBy && !workByOptions.includes(itemToSave.workBy)) {
+            await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
+        }
       }
 
     } catch (error) {
       console.error("Error saving document: ", error);
     }
     handleCloseModal();
+    handleCloseReminderForm();
   };
   
   const handleImport = async (data: string) => {
@@ -740,6 +760,7 @@ const App: React.FC = () => {
                     <SortableHeader column="workOfType" title="Work Type" thClassName="bg-fuchsia-500 hover:bg-fuchsia-600" />
                     <SortableHeader column="status" title="Status" thClassName="bg-orange-500 hover:bg-orange-600" />
                     <SortableHeader column="customerName" title="Client / Case Info" thClassName="bg-amber-500 hover:bg-amber-600" />
+                    <SortableHeader column="reminderDate" title="Reminder" thClassName="bg-lime-500 hover:bg-lime-600" />
                     <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-white bg-violet-500">
                         Called
                     </th>
@@ -759,6 +780,7 @@ const App: React.FC = () => {
                       isSelectionMode={isSelectionMode}
                       onToggleSelection={handleToggleItemSelection}
                       onEdit={() => handleOpenModal(item)}
+                      onSetReminder={() => handleOpenReminderForm(item)}
                       onDelete={() => handleMoveToTrash(item.id!)}
                       onRestore={() => handleRestoreFromTrash(item.id!)}
                       onArchive={() => handleArchive(item.id!)}
@@ -803,6 +825,14 @@ const App: React.FC = () => {
           />
         )}
         
+        {isReminderFormOpen && (
+            <ReminderForm
+                item={currentItem}
+                onSave={handleSave}
+                onClose={handleCloseReminderForm}
+            />
+        )}
+
         {isBulkEditModalOpen && (
             <BulkEditModal
                 onClose={() => setIsBulkEditModalOpen(false)}
@@ -820,7 +850,7 @@ const App: React.FC = () => {
             />
         )}
 
-        <Fab onClick={() => handleOpenModal()} />
+        <Fab onAddWorkItem={() => handleOpenModal()} onAddReminder={() => handleOpenReminderForm()} />
       </div>
        <footer className="text-center py-4 px-4 text-sm text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
         MADE WITH ❤️ BY <a href="http://ainulislam.info" target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">"Ainul islam"</a>

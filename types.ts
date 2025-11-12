@@ -1,5 +1,5 @@
 // Defines the possible statuses for a work item.
-export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | 'PAID ONLY' | string;
+export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | 'PAID ONLY' | 'PENDING' | string;
 
 // Defines the structure of a work item.
 export interface WorkItem {
@@ -20,4 +20,6 @@ export interface WorkItem {
   isTrashed: boolean;
   trashedAt?: string;
   customerCalled?: boolean;
+  reminderDate?: string; // Optional: ISO date string for reminder
+  reminderNote?: string; // Optional: A note for the reminder
 }
