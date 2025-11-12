@@ -8,6 +8,7 @@ import RemindersTable from './components/RemindersTable';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
 import HeaderActions from './components/HeaderActions';
+import FirestoreError from './components/FirestoreError';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
 import { db, firebase } from './firebase';
 import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
@@ -31,11 +32,21 @@ const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string
   'Trash':            { base: 'bg-stone-500 hover:bg-stone-600',  active: 'bg-stone-700 ring-stone-500',   badge: 'bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-200' },
 };
 
+const FIRESTORE_RULES = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('isAuthenticated') === 'true';
   });
   const [loginError, setLoginError] = useState('');
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
 
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -134,35 +145,44 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     const q = db.collection("work-items").orderBy("dateOfWork", "desc");
-    const unsubscribe = q.onSnapshot((querySnapshot) => {
-      const items: WorkItem[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        // Exclude old 'REMINDER' type items from the main list
-        if (data.workOfType === 'REMINDER') return;
-        
-        items.push({
-          id: doc.id,
-          dateOfWork: data.dateOfWork || '',
-          workBy: data.workBy || '',
-          workOfType: data.workOfType || 'N/A',
-          status: data.status || 'N/A',
-          customerName: data.customerName || 'N/A',
-          passportNumber: data.passportNumber || '',
-          trackingNumber: data.trackingNumber || '',
-          mobileWhatsappNumber: data.mobileWhatsappNumber || '',
-          isArchived: data.isArchived || false,
-          isTrashed: data.isTrashed || false,
-          trashedAt: data.trashedAt,
-          salesPrice: data.salesPrice || 0,
-          advance: data.advance || 0,
-          due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
-          dayCount: calculateDayCount(data.dateOfWork),
-          customerCalled: data.customerCalled || false,
+    const unsubscribe = q.onSnapshot(
+      (querySnapshot) => {
+        const items: WorkItem[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Exclude old 'REMINDER' type items from the main list
+          if (data.workOfType === 'REMINDER') return;
+          
+          items.push({
+            id: doc.id,
+            dateOfWork: data.dateOfWork || '',
+            workBy: data.workBy || '',
+            workOfType: data.workOfType || 'N/A',
+            status: data.status || 'N/A',
+            customerName: data.customerName || 'N/A',
+            passportNumber: data.passportNumber || '',
+            trackingNumber: data.trackingNumber || '',
+            mobileWhatsappNumber: data.mobileWhatsappNumber || '',
+            isArchived: data.isArchived || false,
+            isTrashed: data.isTrashed || false,
+            trashedAt: data.trashedAt,
+            salesPrice: data.salesPrice || 0,
+            advance: data.advance || 0,
+            due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
+            dayCount: calculateDayCount(data.dateOfWork),
+            customerCalled: data.customerCalled || false,
+          });
         });
-      });
-      setWorkItems(items);
-    });
+        setWorkItems(items);
+        if (firestoreError) setFirestoreError(null);
+      },
+      (err: any) => {
+        console.error("Firestore listener error (work-items):", err);
+        if (err.code === 'permission-denied') {
+          setFirestoreError(err.message);
+        }
+      }
+    );
     
     return () => unsubscribe();
   }, [isAuthenticated]);
@@ -170,22 +190,31 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     const q = db.collection("reminders").orderBy("reminderDate", "desc");
-    const unsubscribe = q.onSnapshot((querySnapshot) => {
-        const items: Reminder[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            items.push({
-                id: doc.id,
-                title: data.title,
-                note: data.note,
-                reminderDate: data.reminderDate,
-                isCompleted: data.isCompleted,
-                createdAt: data.createdAt,
-                workItemId: data.workItemId,
-            });
-        });
-        setReminders(items);
-    });
+    const unsubscribe = q.onSnapshot(
+      (querySnapshot) => {
+          const items: Reminder[] = [];
+          querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              items.push({
+                  id: doc.id,
+                  title: data.title,
+                  note: data.note,
+                  reminderDate: data.reminderDate,
+                  isCompleted: data.isCompleted,
+                  createdAt: data.createdAt,
+                  workItemId: data.workItemId,
+              });
+          });
+          setReminders(items);
+          if (firestoreError) setFirestoreError(null);
+      },
+      (err: any) => {
+        console.error("Firestore listener error (reminders):", err);
+        if (err.code === 'permission-denied') {
+          setFirestoreError(err.message);
+        }
+      }
+    );
     return () => unsubscribe();
   }, [isAuthenticated]);
   
@@ -382,11 +411,13 @@ const App: React.FC = () => {
             await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
         }
       }
-
-    } catch (error) {
+      handleCloseModal();
+    } catch (error: any) {
       console.error("Error saving document: ", error);
+      if (error.code === 'permission-denied') {
+        setFirestoreError(error.message);
+      }
     }
-    handleCloseModal();
   };
   
   const handleSaveReminder = async (reminderToSave: Partial<Reminder>) => {
@@ -397,29 +428,41 @@ const App: React.FC = () => {
         } else {
             await db.collection("reminders").add(reminderToSave);
         }
-    } catch (error) {
+        handleCloseReminderForm();
+    } catch (error: any) {
         console.error("Error saving reminder: ", error);
-        alert("An error occurred while saving the reminder.");
+        if (error.code === 'permission-denied') {
+            setFirestoreError(error.message);
+        } else {
+            alert("An error occurred while saving the reminder.");
+        }
     }
-    handleCloseReminderForm();
   };
 
   const handleDeleteReminder = async (id: string) => {
     try {
         await db.collection("reminders").doc(id).delete();
-    } catch (error) {
+        handleCloseReminderForm(); // Close form if open for this reminder
+    } catch (error: any) {
         console.error("Error deleting reminder: ", error);
-        alert("Failed to delete reminder.");
+        if (error.code === 'permission-denied') {
+            setFirestoreError(error.message);
+        } else {
+            alert("Failed to delete reminder.");
+        }
     }
-    handleCloseReminderForm(); // Close form if open for this reminder
   };
 
   const handleToggleReminderComplete = async (id: string, isCompleted: boolean) => {
     try {
         await db.collection("reminders").doc(id).update({ isCompleted });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating reminder status: ", error);
-        alert("Failed to update reminder status.");
+        if (error.code === 'permission-denied') {
+            setFirestoreError(error.message);
+        } else {
+            alert("Failed to update reminder status.");
+        }
     }
   };
 
@@ -496,9 +539,13 @@ const App: React.FC = () => {
 
       alert(`Successfully imported ${itemsToSave.length} items.`);
       handleCloseImportModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error importing documents: ", error);
-      alert("An error occurred during import. Check the console for details.");
+      if (error.code === 'permission-denied') {
+        setFirestoreError(error.message);
+      } else {
+        alert("An error occurred during import. Check the console for details.");
+      }
     }
   };
 
@@ -763,6 +810,8 @@ const App: React.FC = () => {
         <p className="text-sm text-slate-600">{currentDate}</p>
       </div>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 flex-grow">
+        {firestoreError && <FirestoreError error={firestoreError} rules={FIRESTORE_RULES} />}
+        
         {selectedItems.length > 0 && isSelectionMode ? (
           <BulkActionToolbar
             selectedCount={selectedItems.length}
