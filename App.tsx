@@ -4,6 +4,7 @@ import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ReminderForm from './components/ReminderForm';
 import ReminderMarquee from './components/ReminderMarquee';
+import WorkItemMarquee from './components/WorkItemMarquee';
 import RemindersTable from './components/RemindersTable';
 import ImportModal from './components/ImportModal';
 import Fab from './components/Fab';
@@ -16,6 +17,7 @@ import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
 import Pagination from './components/Pagination';
 import Login from './components/Login';
+import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Reminders', 'Archived', 'Trash'];
@@ -99,6 +101,15 @@ const App: React.FC = () => {
     const savedSize = localStorage.getItem('fontSize');
     return savedSize ? parseInt(savedSize, 10) : 16; // Default to 16px
   });
+
+  const [marqueeSpeed, setMarqueeSpeed] = useState<MarqueeSpeed>(() => {
+    const saved = localStorage.getItem('marqueeSpeed');
+    return (saved as MarqueeSpeed) in marqueeSpeeds ? (saved as MarqueeSpeed) : 'Normal';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('marqueeSpeed', marqueeSpeed);
+  }, [marqueeSpeed]);
 
   useEffect(() => {
     document.documentElement.style.fontSize = `${fontSize}px`;
@@ -891,6 +902,8 @@ const App: React.FC = () => {
                         onDecreaseFontSize={handleDecreaseFontSize}
                         onIncreaseFontSize={handleIncreaseFontSize}
                         onResetFontSize={handleResetFontSize}
+                        marqueeSpeed={marqueeSpeed}
+                        onMarqueeSpeedChange={setMarqueeSpeed}
                         onLogout={handleLogout}
                       />
                   </div>
@@ -898,7 +911,10 @@ const App: React.FC = () => {
           </div>
         )}
 
-        <ReminderMarquee reminders={reminders} />
+        <div className="space-y-2 mb-4">
+          <WorkItemMarquee workItems={workItems} speed={marqueeSpeeds[marqueeSpeed]} />
+          <ReminderMarquee reminders={reminders} speed={marqueeSpeeds[marqueeSpeed]} />
+        </div>
 
         <div className="bg-white dark:bg-slate-900/70 rounded-lg shadow-sm ring-1 ring-slate-900/5 dark:ring-white/10 overflow-hidden">
             <div className="border-b border-slate-200 dark:border-slate-800">

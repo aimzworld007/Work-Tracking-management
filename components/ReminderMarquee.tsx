@@ -4,9 +4,10 @@ import { BellIcon } from './icons';
 
 interface ReminderMarqueeProps {
   reminders: Reminder[];
+  speed: number;
 }
 
-const ReminderMarquee: React.FC<ReminderMarqueeProps> = ({ reminders }) => {
+const ReminderMarquee: React.FC<ReminderMarqueeProps> = ({ reminders, speed }) => {
   const dueAndUpcomingReminders = reminders
     .filter(r => !r.isCompleted)
     .sort((a, b) => new Date(a.reminderDate).getTime() - new Date(b.reminderDate).getTime());
@@ -23,7 +24,10 @@ const ReminderMarquee: React.FC<ReminderMarqueeProps> = ({ reminders }) => {
     .join(' ★ ');
 
   return (
-    <div className="marquee-container bg-amber-100 dark:bg-amber-900/50 border-y border-amber-200 dark:border-amber-800/50 overflow-hidden relative flex items-center h-10">
+    <div 
+        className="marquee-container bg-amber-100 dark:bg-amber-900/50 border-y border-amber-200 dark:border-amber-800/50 overflow-hidden relative flex items-center h-10"
+        style={{ '--marquee-duration': `${speed}s` } as React.CSSProperties}
+    >
         <div className="flex-shrink-0 px-3 bg-amber-200 dark:bg-amber-800 h-full flex items-center">
             <BellIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <span className="ml-2 text-sm font-semibold text-amber-800 dark:text-amber-200">Reminders</span>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CogIcon, PrintIcon, ImportIcon, SunIcon, MoonIcon, LockOpenIcon, LockClosedIcon, ClipboardDocumentCheckIcon, LogoutIcon } from './icons';
 import FontSizeAdjuster from './FontSizeAdjuster';
+import MarqueeSpeedControl, { MarqueeSpeed } from './MarqueeSpeedControl';
 
 interface HeaderActionsProps {
   isEditMode: boolean;
@@ -14,6 +15,8 @@ interface HeaderActionsProps {
   onDecreaseFontSize: () => void;
   onIncreaseFontSize: () => void;
   onResetFontSize: () => void;
+  marqueeSpeed: MarqueeSpeed;
+  onMarqueeSpeedChange: (speed: MarqueeSpeed) => void;
   onLogout: () => void;
 }
 
@@ -29,6 +32,8 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
   onDecreaseFontSize,
   onIncreaseFontSize,
   onResetFontSize,
+  marqueeSpeed,
+  onMarqueeSpeedChange,
   onLogout,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -107,12 +112,16 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
           <div className="p-2" role="menu" aria-orientation="vertical">
             <div className="px-1 py-1">
                 <p className="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">View Options</p>
-                <div className="px-2 pt-2 pb-1">
-                  <FontSizeAdjuster 
-                    onDecrease={onDecreaseFontSize}
-                    onIncrease={onIncreaseFontSize}
-                    onReset={onResetFontSize}
-                  />
+                <div className="space-y-4 p-2">
+                    <MarqueeSpeedControl 
+                        currentSpeed={marqueeSpeed}
+                        onSpeedChange={onMarqueeSpeedChange}
+                    />
+                    <FontSizeAdjuster 
+                        onDecrease={onDecreaseFontSize}
+                        onIncrease={onIncreaseFontSize}
+                        onReset={onResetFontSize}
+                    />
                 </div>
                 <div className="px-2 divide-y divide-slate-200 dark:divide-slate-700">
                     <ToggleItem 
