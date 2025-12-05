@@ -25,6 +25,7 @@ export const INITIAL_STATUS_OPTIONS: string[] = [
   'Waiting Delivery',
   'PAID ONLY',
   'PENDING',
+  'Deliverd',
 ];
 
 export const INITIAL_WORK_ITEMS: WorkItem[] = [

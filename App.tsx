@@ -20,7 +20,7 @@ import Login from './components/Login';
 import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
 
 
-const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Reminders', 'Archived', 'Trash'];
+const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
 
 const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string } } = {
   'All Items':        { base: 'bg-slate-500 hover:bg-slate-600', active: 'bg-slate-700 ring-slate-500', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
@@ -29,6 +29,7 @@ const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string
   'Rejected':         { base: 'bg-red-500 hover:bg-red-600',     active: 'bg-red-700 ring-red-500',     badge: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200' },
   'Waiting Delivery': { base: 'bg-purple-500 hover:bg-purple-600',active: 'bg-purple-700 ring-purple-500',badge: 'bg-purple-200 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' },
   'PAID ONLY':        { base: 'bg-cyan-500 hover:bg-cyan-600',   active: 'bg-cyan-700 ring-cyan-500',   badge: 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200' },
+  'Deliverd':         { base: 'bg-emerald-500 hover:bg-emerald-600', active: 'bg-emerald-700 ring-emerald-500', badge: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' },
   'Reminders':        { base: 'bg-amber-500 hover:bg-amber-600', active: 'bg-amber-700 ring-amber-500', badge: 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' },
   'Archived':         { base: 'bg-gray-500 hover:bg-gray-600',  active: 'bg-gray-700 ring-gray-500',   badge: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
   'Trash':            { base: 'bg-stone-500 hover:bg-stone-600',  active: 'bg-stone-700 ring-stone-500',   badge: 'bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-200' },

@@ -223,7 +223,10 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
     if (!cleanedNumber) return null;
 
     const formattedDate = formatDate(item.dateOfWork);
-    const message = `dear, ${item.customerName}, on ${formattedDate} your ${item.workOfType} is ${item.status}.`;
+    let message = `dear, ${item.customerName}, on ${formattedDate} your ${item.workOfType} is ${item.status}.`;
+    if (item.status === 'Deliverd') {
+        message += " please collect it from our office";
+    }
     const encodedMessage = encodeURIComponent(message);
     
     return `https://wa.me/${cleanedNumber}?text=${encodedMessage}`;
