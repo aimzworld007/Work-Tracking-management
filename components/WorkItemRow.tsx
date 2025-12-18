@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { WorkItem, Reminder } from '../types';
 import StatusBadge from './StatusBadge';
@@ -426,7 +427,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
                   <button onClick={handleTrashClick} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 p-1.5 rounded-md transition-colors" title="Move to Trash">
                       <DeleteIcon className="h-4 w-4" />
                   </button>
-                  {(item.status === 'Approved' || item.status === 'Rejected') && (
+                  {(item.status === 'Approved' || item.status === 'Rejected' || item.status === 'Deliverd') && (
                        <button onClick={handleArchiveClick} className="text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-500 p-1.5 rounded-md transition-colors" title="Archive">
                           <ArchiveIcon className="h-4 w-4" />
                       </button>

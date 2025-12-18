@@ -390,11 +390,6 @@ const App: React.FC = () => {
         due 
     };
     
-    // Auto-archive if status is 'Deliverd'
-    if (dataToSave.status === 'Deliverd') {
-      dataToSave.isArchived = true;
-    }
-
     try {
       if (dataToSave.id) {
         const { id, ...dataToUpdate } = dataToSave;
@@ -631,11 +626,7 @@ const App: React.FC = () => {
   const handleStatusChange = async (id: string, status: string) => {
     try {
       const docRef = db.collection("work-items").doc(id);
-      const updates: { status: string; isArchived?: boolean } = { status };
-      if (status === 'Deliverd') {
-        updates.isArchived = true;
-      }
-      await docRef.update(updates);
+      await docRef.update({ status });
     } catch (error) {
       console.error("Error updating status: ", error);
       alert("Failed to update status. Please try again.");
@@ -718,10 +709,7 @@ const App: React.FC = () => {
         return;
     };
 
-    const dataToUpdate: { status?: string; workBy?: string; isArchived?: boolean } = { ...data };
-    if (data.status === 'Deliverd') {
-        dataToUpdate.isArchived = true;
-    }
+    const dataToUpdate = { ...data };
     
     try {
         const batch = db.batch();
