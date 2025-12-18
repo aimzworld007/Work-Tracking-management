@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WorkItem, Reminder } from './types';
 import WorkItemRow from './components/WorkItemRow';
@@ -382,12 +383,17 @@ const App: React.FC = () => {
     const advance = Number(itemToSave.advance) || 0;
     const due = salesPrice - advance;
 
-    const dataToSave = { 
+    const dataToSave: Partial<WorkItem> = { 
         ...itemToSave, 
         salesPrice,
         advance,
         due 
     };
+    
+    // Auto-archive if status is 'Deliverd'
+    if (dataToSave.status === 'Deliverd') {
+      dataToSave.isArchived = true;
+    }
 
     try {
       if (dataToSave.id) {
@@ -415,7 +421,7 @@ const App: React.FC = () => {
         await db.collection("work-items").add({ 
           ...finalData,
           dateOfWork: selectedDate.toISOString(),
-          isArchived: false,
+          isArchived: finalData.isArchived || false,
           isTrashed: false,
           customerCalled: false,
         });
@@ -625,7 +631,11 @@ const App: React.FC = () => {
   const handleStatusChange = async (id: string, status: string) => {
     try {
       const docRef = db.collection("work-items").doc(id);
-      await docRef.update({ status });
+      const updates: { status: string; isArchived?: boolean } = { status };
+      if (status === 'Deliverd') {
+        updates.isArchived = true;
+      }
+      await docRef.update(updates);
     } catch (error) {
       console.error("Error updating status: ", error);
       alert("Failed to update status. Please try again.");
@@ -707,11 +717,17 @@ const App: React.FC = () => {
         setIsBulkEditModalOpen(false);
         return;
     };
+
+    const dataToUpdate: { status?: string; workBy?: string; isArchived?: boolean } = { ...data };
+    if (data.status === 'Deliverd') {
+        dataToUpdate.isArchived = true;
+    }
+    
     try {
         const batch = db.batch();
         selectedItems.forEach(id => {
             const docRef = db.collection("work-items").doc(id);
-            batch.update(docRef, data);
+            batch.update(docRef, dataToUpdate);
         });
         await batch.commit();
         setSelectedItems([]);

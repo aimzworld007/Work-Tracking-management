@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { WorkItem } from '../types';
 import { CloseIcon } from './icons';
@@ -51,6 +52,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     mobileWhatsappNumber: '',
     salesPrice: 0,
     advance: 0,
+    isArchived: false,
   });
   
   const [isCustomWorkType, setIsCustomWorkType] = useState(false);
@@ -71,6 +73,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         mobileWhatsappNumber: item.mobileWhatsappNumber,
         salesPrice: item.salesPrice || 0,
         advance: item.advance || 0,
+        isArchived: item.isArchived || false,
       });
     } else {
        setIsCustomWorkType(false);
@@ -86,6 +89,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            mobileWhatsappNumber: '971',
            salesPrice: 0,
            advance: 0,
+           isArchived: false,
        });
     }
   }, [item, workTypeOptions, statusOptions]);
