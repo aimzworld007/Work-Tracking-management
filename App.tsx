@@ -19,6 +19,7 @@ import BulkEditModal from './components/BulkEditModal';
 import Pagination from './components/Pagination';
 import Login from './components/Login';
 import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
+import WhatsAppModal from './components/WhatsAppModal';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
@@ -108,6 +109,8 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('marqueeSpeed');
     return (saved as MarqueeSpeed) in marqueeSpeeds ? (saved as MarqueeSpeed) : 'Normal';
   });
+
+  const [whatsAppItem, setWhatsAppItem] = useState<WorkItem | null>(null);
 
   useEffect(() => {
     localStorage.setItem('marqueeSpeed', marqueeSpeed);
@@ -390,40 +393,27 @@ const App: React.FC = () => {
         due 
     };
     
-    if (dataToSave.status === 'Approved' || dataToSave.status === 'Deliverd') {
-      dataToSave.isArchived = true;
-    }
+    const originalStatus = itemToSave.id ? workItems.find(w => w.id === itemToSave.id)?.status : null;
 
     try {
+      let savedDocId: string | undefined = itemToSave.id;
+
       if (dataToSave.id) {
         const { id, ...dataToUpdate } = dataToSave;
-        const docRef = db.collection("work-items").doc(id);
-
-        if (dataToUpdate.dateOfWork) {
-            const originalItem = workItems.find(w => w.id === id);
-            if (originalItem && originalItem.dateOfWork.includes('T')) {
-                const timePart = originalItem.dateOfWork.split('T')[1];
-                dataToUpdate.dateOfWork = `${dataToUpdate.dateOfWork.split('T')[0]}T${timePart}`;
-            }
-        }
-        
-        await docRef.update(dataToUpdate);
+        await db.collection("work-items").doc(id).update(dataToUpdate);
       } else {
         const selectedDate = new Date(`${dataToSave.dateOfWork}T00:00:00`);
         const now = new Date();
-        selectedDate.setHours(now.getHours());
-        selectedDate.setMinutes(now.getMinutes());
-        selectedDate.setSeconds(now.getSeconds());
-
+        selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
         const { id, ...finalData } = dataToSave;
-
-        await db.collection("work-items").add({ 
+        const docRef = await db.collection("work-items").add({ 
           ...finalData,
           dateOfWork: selectedDate.toISOString(),
           isArchived: finalData.isArchived || false,
           isTrashed: false,
           customerCalled: false,
         });
+        savedDocId = docRef.id;
       }
       
       if (itemToSave.workOfType) {
@@ -438,7 +428,23 @@ const App: React.FC = () => {
             await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
         }
       }
+
       handleCloseModal();
+
+      if (dataToSave.status === 'Approved' && originalStatus !== 'Approved') {
+        const itemForWhatsApp = {
+            ...itemToSave,
+            id: savedDocId,
+            dayCount: 0,
+            isArchived: dataToSave.isArchived,
+            isTrashed: false,
+            due: dataToSave.due,
+        } as WorkItem;
+        
+        if (itemForWhatsApp.mobileWhatsappNumber) {
+            setWhatsAppItem(itemForWhatsApp);
+        }
+      }
     } catch (error: any) {
       console.error("Error saving document: ", error);
       if (error.code === 'permission-denied') {
@@ -628,13 +634,20 @@ const App: React.FC = () => {
   };
 
   const handleStatusChange = async (id: string, status: string) => {
+    const item = workItems.find(w => w.id === id);
+    if (!item || item.status === status) return;
+
     try {
       const docRef = db.collection("work-items").doc(id);
       const updates: { status: string; isArchived?: boolean } = { status };
-      if (status === 'Approved' || status === 'Deliverd') {
-        updates.isArchived = true;
-      }
       await docRef.update(updates);
+
+      if (status === 'Approved') {
+          if (item.mobileWhatsappNumber) {
+              const updatedItem = { ...item, status: 'Approved', isArchived: item.isArchived };
+              setWhatsAppItem(updatedItem);
+          }
+      }
     } catch (error) {
       console.error("Error updating status: ", error);
       alert("Failed to update status. Please try again.");
@@ -717,10 +730,7 @@ const App: React.FC = () => {
         return;
     };
 
-    const dataToUpdate: { status?: string; workBy?: string; isArchived?: boolean } = { ...data };
-    if (data.status === 'Approved' || data.status === 'Deliverd') {
-        dataToUpdate.isArchived = true;
-    }
+    const dataToUpdate: { status?: string; workBy?: string } = { ...data };
     
     try {
         const batch = db.batch();
@@ -1089,6 +1099,14 @@ const App: React.FC = () => {
             <ImportModal
                 onClose={handleCloseImportModal}
                 onImport={handleImport}
+            />
+        )}
+
+        {whatsAppItem && (
+            <WhatsAppModal 
+                item={whatsAppItem}
+                onClose={() => setWhatsAppItem(null)}
+                onArchive={() => handleArchive(whatsAppItem.id!)}
             />
         )}
 

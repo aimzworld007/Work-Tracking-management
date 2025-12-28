@@ -292,7 +292,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
             className="block w-full max-w-[170px] rounded-md border-0 bg-white dark:bg-slate-900 py-1 pl-2 pr-7 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-xs sm:leading-5"
           >
             {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            {(item.status === 'Approved' || item.status === 'Rejected') && (
+            {item.status === 'Rejected' && (
                 <>
                     <option disabled>──────────</option>
                     <option value="Archive">Archive Item</option>
