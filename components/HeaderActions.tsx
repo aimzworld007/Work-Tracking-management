@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { CogIcon, PrintIcon, ImportIcon, SunIcon, MoonIcon, LockOpenIcon, LockClosedIcon, ClipboardDocumentCheckIcon, LogoutIcon } from './icons';
+import { CogIcon, PrintIcon, ImportIcon, SunIcon, MoonIcon, LockOpenIcon, LockClosedIcon, ClipboardDocumentCheckIcon, LogoutIcon, TagIcon } from './icons';
 import FontSizeAdjuster from './FontSizeAdjuster';
 import MarqueeSpeedControl, { MarqueeSpeed } from './MarqueeSpeedControl';
 
@@ -18,6 +19,7 @@ interface HeaderActionsProps {
   marqueeSpeed: MarqueeSpeed;
   onMarqueeSpeedChange: (speed: MarqueeSpeed) => void;
   onLogout: () => void;
+  onManageOptions: () => void;
 }
 
 const HeaderActions: React.FC<HeaderActionsProps> = ({
@@ -35,6 +37,7 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
   marqueeSpeed,
   onMarqueeSpeedChange,
   onLogout,
+  onManageOptions,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -150,6 +153,12 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({
             <div className="border-t border-slate-200 dark:border-slate-700 px-1 py-1">
                 <p className="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</p>
                 <div className="mt-1">
+                    <ActionButton 
+                        label="Manage Options"
+                        onClick={onManageOptions}
+                        icon={<TagIcon className="h-5 w-5" />}
+                        disabled={!isEditMode}
+                    />
                     <ActionButton 
                         label="Import from File"
                         onClick={onImport}

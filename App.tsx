@@ -20,6 +20,7 @@ import Pagination from './components/Pagination';
 import Login from './components/Login';
 import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
 import WhatsAppModal from './components/WhatsAppModal';
+import OptionsManagementModal from './components/OptionsManagementModal';
 
 
 const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
@@ -60,6 +61,7 @@ const App: React.FC = () => {
   const [isReminderFormOpen, setIsReminderFormOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<WorkItem | null>(null);
   const [currentReminder, setCurrentReminder] = useState<Reminder | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -241,9 +243,9 @@ const App: React.FC = () => {
       if (doc.exists) {
         const data = doc.data();
         if (data) {
-            setWorkTypeOptions(prev => [...new Set([...prev, ...(data.workTypes || [])])]);
-            setStatusOptions(prev => [...new Set([...prev, ...(data.statuses || [])])]);
-            setWorkByOptions(prev => [...new Set([...prev, ...(data.workBy || [])])]);
+            setWorkTypeOptions([...new Set([...staticWorkTypeOptions, ...(data.workTypes || [])])].sort());
+            setStatusOptions([...new Set([...INITIAL_STATUS_OPTIONS, ...(data.statuses || [])])]);
+            setWorkByOptions([...new Set([...INITIAL_WORK_BY_OPTIONS, ...(data.workBy || [])])].sort());
         }
       } else {
         console.log("Options document does not exist, creating it with default values.");
@@ -866,6 +868,74 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
   };
 
+  const optionsDocRef = db.collection('options').doc('appData');
+
+  const handleAddOption = async (field: 'workTypes' | 'statuses' | 'workBy', value: string) => {
+      if (!value.trim()) return;
+      try {
+          await optionsDocRef.update({
+              [field]: firebase.firestore.FieldValue.arrayUnion(value.trim())
+          });
+      } catch (error) {
+          console.error(`Error adding ${field}: `, error);
+          alert(`Failed to add new option. See console for details.`);
+      }
+  };
+
+  const handleDeleteOption = async (field: 'workTypes' | 'statuses', value: string) => {
+      const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+      
+      try {
+          const usageQuery = await db.collection('work-items').where(collectionField, '==', value).limit(1).get();
+          if (!usageQuery.empty) {
+              alert(`Cannot delete "${value}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
+              return;
+          }
+
+          if (window.confirm(`Are you sure you want to permanently delete "${value}"? This action cannot be undone.`)) {
+              await optionsDocRef.update({
+                  [field]: firebase.firestore.FieldValue.arrayRemove(value)
+              });
+          }
+      } catch (error) {
+          console.error(`Error deleting ${field}: `, error);
+          alert(`Failed to delete option. See console for details.`);
+      }
+  };
+
+  const handleEditOption = async (field: 'workTypes' | 'statuses', oldValue: string, newValue: string) => {
+      if (!newValue.trim() || oldValue === newValue.trim()) return;
+      const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+
+      try {
+          const doc = await optionsDocRef.get();
+          if (doc.exists) {
+              const data = doc.data();
+              const currentOptions = data?.[field] || [];
+              if (currentOptions.includes(newValue.trim())) {
+                  alert(`The option "${newValue.trim()}" already exists.`);
+                  return;
+              }
+              const updatedOptions = currentOptions.map((opt:string) => opt === oldValue ? newValue.trim() : opt);
+              await optionsDocRef.update({ [field]: updatedOptions });
+          }
+
+          const batch = db.batch();
+          const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', oldValue).get();
+          
+          if (!itemsToUpdateQuery.empty) {
+                itemsToUpdateQuery.forEach(doc => {
+                  batch.update(doc.ref, { [collectionField]: newValue.trim() });
+              });
+              await batch.commit();
+          }
+        
+      } catch (error) {
+          console.error(`Error editing ${field}: `, error);
+          alert(`Failed to edit option. See console for details.`);
+      }
+  };
+
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} error={loginError} />;
   }
@@ -931,6 +1001,7 @@ const App: React.FC = () => {
                         marqueeSpeed={marqueeSpeed}
                         onMarqueeSpeedChange={setMarqueeSpeed}
                         onLogout={handleLogout}
+                        onManageOptions={() => setIsOptionsModalOpen(true)}
                       />
                   </div>
               </div>
@@ -1099,6 +1170,21 @@ const App: React.FC = () => {
             <ImportModal
                 onClose={handleCloseImportModal}
                 onImport={handleImport}
+            />
+        )}
+
+        {isOptionsModalOpen && (
+            <OptionsManagementModal
+                isOpen={isOptionsModalOpen}
+                onClose={() => setIsOptionsModalOpen(false)}
+                workTypeOptions={workTypeOptions.filter(opt => !staticWorkTypeOptions.includes(opt))}
+                statusOptions={statusOptions.filter(opt => !INITIAL_STATUS_OPTIONS.includes(opt))}
+                onAddWorkType={(value) => handleAddOption('workTypes', value)}
+                onDeleteWorkType={(value) => handleDeleteOption('workTypes', value)}
+                onEditWorkType={(oldValue, newValue) => handleEditOption('workTypes', oldValue, newValue)}
+                onAddStatus={(value) => handleAddOption('statuses', value)}
+                onDeleteStatus={(value) => handleDeleteOption('statuses', value)}
+                onEditStatus={(oldValue, newValue) => handleEditOption('statuses', oldValue, newValue)}
             />
         )}
 
