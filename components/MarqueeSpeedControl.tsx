@@ -1,9 +1,10 @@
+
 import React from 'react';
 
 export const marqueeSpeeds = {
-  Slow: 120,
-  Normal: 80,
-  Fast: 40,
+  Slow: 240,
+  Normal: 160,
+  Fast: 80,
 };
 
 export type MarqueeSpeed = keyof typeof marqueeSpeeds;
