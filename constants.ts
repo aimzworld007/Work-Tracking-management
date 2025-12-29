@@ -1,22 +1,22 @@
 
-import { WorkItem } from './types';
+import { WorkItem, WorkTypeConfig } from './types';
 
-export const WORK_TYPE_OPTIONS = [
-  'PAKISTANI PP RENEWAL',
-  'ID TYPE',
-  'Lost PP Certificate',
-  'Police Clearance',
-  'Driving Licence',
-  'Car Mulkiya',
-  'Out Pass',
-  'Cancel Visa',
-  'Medical type',
-  'Mohare est update',
-  'withdraw absconding',
-  'work permit',
-  'labor cancel',
-  'NUMBER UPDATE',
-  'Issue visa',
+export const INITIAL_WORK_TYPE_CONFIGS: WorkTypeConfig[] = [
+  { name: 'PAKISTANI PP RENEWAL' },
+  { name: 'ID TYPE' },
+  { name: 'Lost PP Certificate', trackingUrl: 'https://www.dubaipolice.gov.ae/wps/portal/home/hidden/verifyidentity' },
+  { name: 'Police Clearance', trackingUrl: 'https://www.dubaipolice.gov.ae/wps/portal/home/hidden/verifyidentity' },
+  { name: 'Driving Licence' },
+  { name: 'Car Mulkiya' },
+  { name: 'Out Pass' },
+  { name: 'Cancel Visa' },
+  { name: 'Medical type' },
+  { name: 'Mohare est update', trackingUrl: 'https://inquiry.mohre.gov.ae' },
+  { name: 'withdraw absconding', trackingUrl: 'https://inquiry.mohre.gov.ae' },
+  { name: 'work permit', trackingUrl: 'https://inquiry.mohre.gov.ae' },
+  { name: 'labor cancel', trackingUrl: 'https://inquiry.mohre.gov.ae' },
+  { name: 'NUMBER UPDATE' },
+  { name: 'Issue visa' },
 ];
 
 export const INITIAL_STATUS_OPTIONS: string[] = [

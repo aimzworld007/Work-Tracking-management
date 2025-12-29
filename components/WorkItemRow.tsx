@@ -8,6 +8,7 @@ interface WorkItemRowProps {
   serialNumber: number;
   item: WorkItem;
   reminders: Reminder[];
+  trackingUrl?: string;
   isSelected: boolean;
   isSelectionMode: boolean;
   onToggleSelection: (id: string) => void;
@@ -53,21 +54,6 @@ const getWorkTypeColorClass = (workType: string): string => {
   return COLORS[hash % COLORS.length];
 };
 
-const getTrackingLink = (workType: string): string | null => {
-  const dubaiPoliceTypes = ['Lost PP Certificate', 'Police Clearance'];
-  const mohreTypes = ['withdraw absconding', 'work permit', 'labor cancel', 'Mohare est update'];
-
-  if (dubaiPoliceTypes.includes(workType)) {
-    return 'https://www.dubaipolice.gov.ae/wps/portal/home/hidden/verifyidentity';
-  }
-
-  if (mohreTypes.includes(workType)) {
-    return 'https://inquiry.mohre.gov.ae';
-  }
-
-  return null;
-};
-
 const getReminderStatus = (reminders: Reminder[]): { color: string, tooltip: string } | null => {
     const incompleteReminders = reminders.filter(r => !r.isCompleted);
     if (incompleteReminders.length === 0) return null;
@@ -96,7 +82,7 @@ const getReminderStatus = (reminders: Reminder[]): { color: string, tooltip: str
 };
 
 
-const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders, isSelected, isSelectionMode, onToggleSelection, onEdit, onSetReminder, onDelete, onRestore, onPermanentDelete, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
+const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders, trackingUrl, isSelected, isSelectionMode, onToggleSelection, onEdit, onSetReminder, onDelete, onRestore, onPermanentDelete, onArchive, onUnarchive, onStatusChange, onCustomerCalledToggle, statusOptions, isEditMode }) => {
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
@@ -215,8 +201,6 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
     });
   };
 
-  const trackingLink = getTrackingLink(item.workOfType);
-  
   const generateWhatsAppLink = () => {
     if (!item.mobileWhatsappNumber) return null;
 
@@ -259,7 +243,9 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         data-item-id={item.id}
         className={`${
           isSelected ? 'bg-indigo-50 dark:bg-slate-800/50' : 'even:bg-slate-50/50 dark:even:bg-slate-800/50'
-        } ${item.isTrashed ? 'opacity-60' : ''} hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${colorClass}`}
+        } ${
+          item.isTrashed ? 'opacity-60' : ''
+        } hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors duration-150 border-l-4 ${item.customerCalled ? 'border-l-green-500' : colorClass}`}
     >
       {isSelectionMode && (
         <td className="relative px-7 sm:w-12 sm:px-6 align-top pt-4">
@@ -346,9 +332,9 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
              <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-slate-600 dark:text-slate-300">Tracking:</span>
                 <div className="flex items-center">
-                    {trackingLink && item.trackingNumber ? (
+                    {trackingUrl && item.trackingNumber ? (
                         <a
-                            href={trackingLink}
+                            href={trackingUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group inline-flex items-center gap-1.5 text-indigo-600 hover:underline dark:text-indigo-400"
@@ -384,8 +370,8 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
             className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:bg-slate-800 dark:border-slate-600 dark:checked:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             checked={item.customerCalled || false}
             onChange={(e) => onCustomerCalledToggle(item.id!, e.target.checked)}
-            disabled={!isEditMode || item.isTrashed}
-            title={isEditMode && !item.isTrashed ? (item.customerCalled ? 'Mark as not called' : 'Mark as called') : 'Customer call status'}
+            disabled={item.isTrashed}
+            title={item.isTrashed ? 'Cannot change for trashed item' : (item.customerCalled ? 'Mark as not called' : 'Mark as called')}
             aria-label={`Customer ${item.customerName} called status`}
         />
       </td>

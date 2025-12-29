@@ -1,107 +1,148 @@
 
 import React, { useState } from 'react';
 import { CloseIcon, EditIcon, DeleteIcon, CheckIcon, AddIcon } from './icons';
+import { WorkTypeConfig } from '../types';
 
 interface OptionsManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  workTypeOptions: string[];
+  workTypeOptions: WorkTypeConfig[];
   statusOptions: string[];
-  onAddWorkType: (value: string) => void;
+  onAddWorkType: (value: WorkTypeConfig) => void;
   onDeleteWorkType: (value: string) => void;
-  onEditWorkType: (oldValue: string, newValue: string) => void;
+  onEditWorkType: (oldValue: string, newValue: WorkTypeConfig) => void;
   onAddStatus: (value: string) => void;
   onDeleteStatus: (value: string) => void;
   onEditStatus: (oldValue: string, newValue: string) => void;
 }
 
 const OptionsList: React.FC<{
-    options: string[];
-    onAdd: (value: string) => void;
+    options: any[]; // Can be WorkTypeConfig[] or string[]
+    onAdd: (value: any) => void;
     onDelete: (value: string) => void;
-    onEdit: (oldValue: string, newValue: string) => void;
+    onEdit: (oldValue: string, newValue: any) => void;
     itemTypeName: string;
-}> = ({ options, onAdd, onDelete, onEdit, itemTypeName }) => {
+    isWorkType?: boolean;
+}> = ({ options, onAdd, onDelete, onEdit, itemTypeName, isWorkType = false }) => {
     const [editingOption, setEditingOption] = useState<string | null>(null);
     const [editingValue, setEditingValue] = useState('');
+    const [editingUrl, setEditingUrl] = useState('');
     const [newItemValue, setNewItemValue] = useState('');
+    const [newItemUrl, setNewItemUrl] = useState('');
 
-    const handleEditClick = (option: string) => {
-        setEditingOption(option);
-        setEditingValue(option);
+    const handleEditClick = (option: any) => {
+        const name = isWorkType ? option.name : option;
+        setEditingOption(name);
+        setEditingValue(name);
+        if (isWorkType) {
+            setEditingUrl(option.trackingUrl || '');
+        }
     };
 
     const handleSaveEdit = () => {
         if (editingOption && editingValue.trim()) {
-            onEdit(editingOption, editingValue.trim());
+            const newValue = isWorkType ? { name: editingValue.trim(), trackingUrl: editingUrl.trim() } : editingValue.trim();
+            onEdit(editingOption, newValue);
         }
         setEditingOption(null);
         setEditingValue('');
+        setEditingUrl('');
     };
     
     const handleCancelEdit = () => {
         setEditingOption(null);
         setEditingValue('');
+        setEditingUrl('');
     };
     
     const handleAddNew = (e: React.FormEvent) => {
         e.preventDefault();
         if (newItemValue.trim()) {
-            onAdd(newItemValue.trim());
+            const newValue = isWorkType ? { name: newItemValue.trim(), trackingUrl: newItemUrl.trim() } : newItemValue.trim();
+            onAdd(newValue);
             setNewItemValue('');
+            setNewItemUrl('');
         }
     };
 
     return (
         <div>
             <ul className="divide-y divide-slate-200 dark:divide-slate-700 max-h-60 overflow-y-auto pr-2">
-                {options.map((option) => (
-                    <li key={option} className="py-2 flex items-center justify-between">
-                        {editingOption === option ? (
-                            <div className="flex-grow flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
-                                    autoFocus
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                                />
-                                <button onClick={handleSaveEdit} className="p-1.5 rounded-md text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50">
-                                    <CheckIcon className="h-5 w-5" />
-                                </button>
-                                <button onClick={handleCancelEdit} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                    <CloseIcon className="h-5 w-5" />
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                <span className="text-sm text-slate-800 dark:text-slate-200">{option}</span>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => handleEditClick(option)} className="p-1.5 rounded-md text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700" title={`Edit ${option}`}>
-                                        <EditIcon className="h-4 w-4" />
-                                    </button>
-                                    <button onClick={() => onDelete(option)} className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700" title={`Delete ${option}`}>
-                                        <DeleteIcon className="h-4 w-4" />
-                                    </button>
+                {options.map((option) => {
+                    const name = isWorkType ? option.name : option;
+                    const url = isWorkType ? option.trackingUrl : undefined;
+                    return (
+                        <li key={name} className="py-2 flex items-center justify-between">
+                            {editingOption === name ? (
+                                <div className="flex-grow flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={editingValue}
+                                            onChange={(e) => setEditingValue(e.target.value)}
+                                            className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                                            autoFocus
+                                        />
+                                        <button onClick={handleSaveEdit} className="p-1.5 rounded-md text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50">
+                                            <CheckIcon className="h-5 w-5" />
+                                        </button>
+                                        <button onClick={handleCancelEdit} className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">
+                                            <CloseIcon className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    {isWorkType && (
+                                        <input
+                                            type="text"
+                                            placeholder="Tracking URL (optional)"
+                                            value={editingUrl}
+                                            onChange={(e) => setEditingUrl(e.target.value)}
+                                            className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                                        />
+                                    )}
                                 </div>
-                            </>
-                        )}
-                    </li>
-                ))}
+                            ) : (
+                                <>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm text-slate-800 dark:text-slate-200">{name}</span>
+                                        {isWorkType && url && <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs">{url}</span>}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleEditClick(option)} className="p-1.5 rounded-md text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700" title={`Edit ${name}`}>
+                                            <EditIcon className="h-4 w-4" />
+                                        </button>
+                                        <button onClick={() => onDelete(name)} className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700" title={`Delete ${name}`}>
+                                            <DeleteIcon className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </li>
+                    )
+                })}
             </ul>
-             <form onSubmit={handleAddNew} className="mt-4 flex items-center gap-2 border-t border-slate-200 dark:border-slate-700 pt-4">
-                <input
-                    type="text"
-                    value={newItemValue}
-                    onChange={(e) => setNewItemValue(e.target.value)}
-                    placeholder={`Add new ${itemTypeName.toLowerCase()}...`}
-                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm"
-                />
-                <button type="submit" className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50" disabled={!newItemValue.trim()}>
-                    <AddIcon className="h-5 w-5 -ml-1" />
-                    Add
-                </button>
+             <form onSubmit={handleAddNew} className="mt-4 flex flex-col gap-2 border-t border-slate-200 dark:border-slate-700 pt-4">
+                 <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={newItemValue}
+                        onChange={(e) => setNewItemValue(e.target.value)}
+                        placeholder={`New ${itemTypeName.toLowerCase()} name...`}
+                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm"
+                    />
+                    <button type="submit" className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50" disabled={!newItemValue.trim()}>
+                        <AddIcon className="h-5 w-5 -ml-1" />
+                        Add
+                    </button>
+                </div>
+                 {isWorkType && (
+                    <input
+                        type="text"
+                        value={newItemUrl}
+                        onChange={(e) => setNewItemUrl(e.target.value)}
+                        placeholder="Tracking URL (optional)"
+                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm"
+                    />
+                 )}
             </form>
         </div>
     );
@@ -152,6 +193,7 @@ const OptionsManagementModal: React.FC<OptionsManagementModalProps> = ({ isOpen,
                                         onDelete={props.onDeleteWorkType}
                                         onEdit={props.onEditWorkType}
                                         itemTypeName="Work Type"
+                                        isWorkType={true}
                                     />
                                 ) : (
                                     <OptionsList

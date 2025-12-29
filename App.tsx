@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { WorkItem, Reminder } from './types';
+import { WorkItem, Reminder, WorkTypeConfig } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ReminderForm from './components/ReminderForm';
@@ -13,7 +13,7 @@ import HeaderActions from './components/HeaderActions';
 import FirestoreError from './components/FirestoreError';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from './components/icons';
 import { db, firebase } from './firebase';
-import { WORK_TYPE_OPTIONS as staticWorkTypeOptions, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
+import { INITIAL_WORK_TYPE_CONFIGS, INITIAL_STATUS_OPTIONS, INITIAL_WORK_BY_OPTIONS } from './constants';
 import BulkActionToolbar from './components/BulkActionToolbar';
 import BulkEditModal from './components/BulkEditModal';
 import Pagination from './components/Pagination';
@@ -73,7 +73,7 @@ const App: React.FC = () => {
   const [reminderSortColumn, setReminderSortColumn] = useState<keyof Reminder>('reminderDate');
   const [reminderSortDirection, setReminderSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const [workTypeOptions, setWorkTypeOptions] = useState<string[]>(staticWorkTypeOptions);
+  const [workTypeOptions, setWorkTypeOptions] = useState<WorkTypeConfig[]>(INITIAL_WORK_TYPE_CONFIGS);
   const [statusOptions, setStatusOptions] = useState<string[]>(INITIAL_STATUS_OPTIONS);
   const [workByOptions, setWorkByOptions] = useState<string[]>(INITIAL_WORK_BY_OPTIONS);
 
@@ -244,14 +244,29 @@ const App: React.FC = () => {
       if (doc.exists) {
         const data = doc.data();
         if (data) {
-            setWorkTypeOptions([...new Set([...staticWorkTypeOptions, ...(data.workTypes || [])])].sort());
+            // Handle Work Types (new object format)
+            if (data.workTypes && data.workTypes.length > 0) {
+                // Backwards compatibility: check if it's the old string array format
+                if (typeof data.workTypes[0] === 'string') {
+                    const migratedWorkTypes = data.workTypes.map((name: string) => ({ name, trackingUrl: INITIAL_WORK_TYPE_CONFIGS.find(c => c.name === name)?.trackingUrl || '' }));
+                    setWorkTypeOptions(migratedWorkTypes);
+                    // Update Firestore with the new format
+                    optionsDocRef.update({ workTypes: migratedWorkTypes });
+                } else {
+                    setWorkTypeOptions(data.workTypes);
+                }
+            } else {
+                setWorkTypeOptions(INITIAL_WORK_TYPE_CONFIGS);
+            }
+            
+            // Handle Statuses and Work By (still string arrays)
             setStatusOptions([...new Set([...INITIAL_STATUS_OPTIONS, ...(data.statuses || [])])]);
             setWorkByOptions([...new Set([...INITIAL_WORK_BY_OPTIONS, ...(data.workBy || [])])].sort());
         }
       } else {
         console.log("Options document does not exist, creating it with default values.");
         optionsDocRef.set({
-            workTypes: staticWorkTypeOptions,
+            workTypes: INITIAL_WORK_TYPE_CONFIGS,
             statuses: INITIAL_STATUS_OPTIONS,
             workBy: INITIAL_WORK_BY_OPTIONS,
         }).catch(err => console.error("Error creating options document:", err));
@@ -439,8 +454,8 @@ const App: React.FC = () => {
 
       if (itemToSave.workOfType) {
         const optionsDocRef = db.collection('options').doc('appData');
-        if (!workTypeOptions.includes(itemToSave.workOfType)) {
-            await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion(itemToSave.workOfType) });
+        if (!workTypeOptions.some(opt => opt.name === itemToSave.workOfType)) {
+            await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion({ name: itemToSave.workOfType, trackingUrl: '' }) });
         }
         if (itemToSave.status && !statusOptions.includes(itemToSave.status)) {
             await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(itemToSave.status) });
@@ -558,7 +573,7 @@ const App: React.FC = () => {
       };
       itemsToSave.push(item);
 
-      if (item.workOfType && !workTypeOptions.includes(item.workOfType)) newWorkTypes.add(item.workOfType);
+      if (item.workOfType && !workTypeOptions.some(wt => wt.name === item.workOfType)) newWorkTypes.add(item.workOfType);
       if (item.status && !statusOptions.includes(item.status)) newStatuses.add(item.status);
       if (item.workBy && !workByOptions.includes(item.workBy)) newWorkBy.add(item.workBy);
     }
@@ -579,7 +594,8 @@ const App: React.FC = () => {
       const optionsDocRef = db.collection('options').doc('appData');
       const updates: { [key: string]: any } = {};
       if (newWorkTypes.size > 0) {
-        updates.workTypes = firebase.firestore.FieldValue.arrayUnion(...Array.from(newWorkTypes));
+        const newWorkTypeObjects = Array.from(newWorkTypes).map(name => ({ name, trackingUrl: '' }));
+        updates.workTypes = firebase.firestore.FieldValue.arrayUnion(...newWorkTypeObjects);
       }
       if (newStatuses.size > 0) {
         updates.statuses = firebase.firestore.FieldValue.arrayUnion(...Array.from(newStatuses));
@@ -831,6 +847,16 @@ const App: React.FC = () => {
     return map;
   }, [reminders]);
 
+  const trackingUrlMap = useMemo(() => {
+    const map = new Map<string, string>();
+    workTypeOptions.forEach(opt => {
+        if (opt.trackingUrl) {
+            map.set(opt.name, opt.trackingUrl);
+        }
+    });
+    return map;
+  }, [workTypeOptions]);
+
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(prev => {
         const newState = !prev;
@@ -889,70 +915,72 @@ const App: React.FC = () => {
 
   const optionsDocRef = db.collection('options').doc('appData');
 
-  const handleAddOption = async (field: 'workTypes' | 'statuses' | 'workBy', value: string) => {
-      if (!value.trim()) return;
-      try {
-          await optionsDocRef.update({
-              [field]: firebase.firestore.FieldValue.arrayUnion(value.trim())
-          });
-      } catch (error) {
-          console.error(`Error adding ${field}: `, error);
-          alert(`Failed to add new option. See console for details.`);
-      }
+  const handleAddOption = async (field: 'workTypes' | 'statuses' | 'workBy', value: string | WorkTypeConfig) => {
+    if ((typeof value === 'string' && !value.trim()) || (typeof value === 'object' && !value.name.trim())) return;
+    try {
+      await optionsDocRef.update({
+        [field]: firebase.firestore.FieldValue.arrayUnion(value)
+      });
+    } catch (error) {
+      console.error(`Error adding ${field}: `, error);
+      alert(`Failed to add new option. See console for details.`);
+    }
   };
 
   const handleDeleteOption = async (field: 'workTypes' | 'statuses', value: string) => {
-      const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
-      
-      try {
-          const usageQuery = await db.collection('work-items').where(collectionField, '==', value).limit(1).get();
-          if (!usageQuery.empty) {
-              alert(`Cannot delete "${value}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
-              return;
-          }
+    const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
 
-          if (window.confirm(`Are you sure you want to permanently delete "${value}"? This action cannot be undone.`)) {
-              await optionsDocRef.update({
-                  [field]: firebase.firestore.FieldValue.arrayRemove(value)
-              });
-          }
-      } catch (error) {
-          console.error(`Error deleting ${field}: `, error);
-          alert(`Failed to delete option. See console for details.`);
+    try {
+      const usageQuery = await db.collection('work-items').where(collectionField, '==', value).limit(1).get();
+      if (!usageQuery.empty) {
+        alert(`Cannot delete "${value}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
+        return;
       }
+
+      if (window.confirm(`Are you sure you want to permanently delete "${value}"? This action cannot be undone.`)) {
+        const currentOptions = field === 'workTypes' ? workTypeOptions : statusOptions;
+        const updatedOptions = currentOptions.filter(opt => (typeof opt === 'string' ? opt : opt.name) !== value);
+        await optionsDocRef.update({ [field]: updatedOptions });
+      }
+    } catch (error) {
+      console.error(`Error deleting ${field}: `, error);
+      alert(`Failed to delete option. See console for details.`);
+    }
   };
 
-  const handleEditOption = async (field: 'workTypes' | 'statuses', oldValue: string, newValue: string) => {
-      if (!newValue.trim() || oldValue === newValue.trim()) return;
-      const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+  const handleEditOption = async (field: 'workTypes' | 'statuses', oldValue: string, newValue: string | WorkTypeConfig) => {
+    const newValueName = typeof newValue === 'string' ? newValue.trim() : newValue.name.trim();
+    if (!newValueName || oldValue === newValueName) return;
 
-      try {
-          const doc = await optionsDocRef.get();
-          if (doc.exists) {
-              const data = doc.data();
-              const currentOptions = data?.[field] || [];
-              if (currentOptions.includes(newValue.trim())) {
-                  alert(`The option "${newValue.trim()}" already exists.`);
-                  return;
-              }
-              const updatedOptions = currentOptions.map((opt:string) => opt === oldValue ? newValue.trim() : opt);
-              await optionsDocRef.update({ [field]: updatedOptions });
-          }
+    const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+    const currentOptions = field === 'workTypes' ? workTypeOptions : statusOptions;
+    const optionExists = currentOptions.some(opt => (typeof opt === 'string' ? opt : opt.name) === newValueName);
 
-          const batch = db.batch();
-          const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', oldValue).get();
-          
-          if (!itemsToUpdateQuery.empty) {
-                itemsToUpdateQuery.forEach(doc => {
-                  batch.update(doc.ref, { [collectionField]: newValue.trim() });
-              });
-              await batch.commit();
-          }
+    if (optionExists) {
+        alert(`The option "${newValueName}" already exists.`);
+        return;
+    }
+
+    try {
+        const updatedOptions = currentOptions.map(opt => {
+            const optName = typeof opt === 'string' ? opt : opt.name;
+            return optName === oldValue ? newValue : opt;
+        });
+        await optionsDocRef.update({ [field]: updatedOptions });
+
+        const batch = db.batch();
+        const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', oldValue).get();
         
-      } catch (error) {
-          console.error(`Error editing ${field}: `, error);
-          alert(`Failed to edit option. See console for details.`);
-      }
+        if (!itemsToUpdateQuery.empty) {
+            itemsToUpdateQuery.forEach(doc => {
+                batch.update(doc.ref, { [collectionField]: newValueName });
+            });
+            await batch.commit();
+        }
+    } catch (error) {
+        console.error(`Error editing ${field}: `, error);
+        alert(`Failed to edit option. See console for details.`);
+    }
   };
 
   if (!isAuthenticated) {
@@ -1113,6 +1141,7 @@ const App: React.FC = () => {
                               serialNumber={startIndex + index + 1}
                               item={item}
                               reminders={remindersByWorkItemId.get(item.id!) || []}
+                              trackingUrl={trackingUrlMap.get(item.workOfType)}
                               isSelected={selectedItems.includes(item.id!)}
                               isSelectionMode={isSelectionMode}
                               onToggleSelection={handleToggleItemSelection}
@@ -1196,8 +1225,8 @@ const App: React.FC = () => {
             <OptionsManagementModal
                 isOpen={isOptionsModalOpen}
                 onClose={() => setIsOptionsModalOpen(false)}
-                workTypeOptions={workTypeOptions.filter(opt => !staticWorkTypeOptions.includes(opt))}
-                statusOptions={statusOptions.filter(opt => !INITIAL_STATUS_OPTIONS.includes(opt))}
+                workTypeOptions={workTypeOptions}
+                statusOptions={statusOptions}
                 onAddWorkType={(value) => handleAddOption('workTypes', value)}
                 onDeleteWorkType={(value) => handleDeleteOption('workTypes', value)}
                 onEditWorkType={(oldValue, newValue) => handleEditOption('workTypes', oldValue, newValue)}

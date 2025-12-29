@@ -34,3 +34,9 @@ export interface Reminder {
     createdAt: string; // ISO datetime string
     workItemId?: string; // Optional link to a work item
 }
+
+// Defines the structure for a work type configuration, including an optional tracking URL.
+export interface WorkTypeConfig {
+  name: string;
+  trackingUrl?: string;
+}

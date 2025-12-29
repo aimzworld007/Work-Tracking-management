@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { WorkItem } from '../types';
+import { WorkItem, WorkTypeConfig } from '../types';
 import { CloseIcon } from './icons';
 import DatePicker from './DatePicker';
 
@@ -9,7 +9,7 @@ interface WorkItemFormProps {
   onSave: (item: Partial<WorkItem>) => void;
   onClose: () => void;
   workByOptions: string[];
-  workTypeOptions: string[];
+  workTypeOptions: WorkTypeConfig[];
   statusOptions: string[];
 }
 
@@ -201,7 +201,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                         />
                                         <CustomSelect label="Work By" name="workBy" value={formData.workBy} onChange={handleCustomSelectChange} options={workByOptions} required />
                                         
-                                        <CustomSelect label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleCustomSelectChange} options={workTypeOptions} required />
+                                        <CustomSelect label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleCustomSelectChange} options={workTypeOptions.map(opt => opt.name)} required />
                                         
                                         <CustomSelect label="Status" name="status" value={formData.status} onChange={handleCustomSelectChange} options={statusOptions} required />
                                         
