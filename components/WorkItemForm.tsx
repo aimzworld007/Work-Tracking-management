@@ -13,27 +13,63 @@ interface WorkItemFormProps {
   statusOptions: string[];
 }
 
-const DatalistInput = ({ label, name, value, onChange, options, required = false }: { label: string, name: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, options: string[], required?: boolean }) => {
-    const dataListId = `${name}-options`;
+const CustomSelect: React.FC<{
+    label: string;
+    name: string;
+    value: string;
+    options: string[];
+    onChange: (name: string, value: string) => void;
+    required?: boolean;
+}> = ({ label, name, value, options, onChange, required = false }) => {
+    const isCustom = value && !options.includes(value);
+    const [isEditingCustom, setIsEditingCustom] = useState(isCustom);
+    
+    useEffect(() => {
+        setIsEditingCustom(value && !options.includes(value));
+    }, [value, options]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedValue = e.target.value;
+        if (selectedValue === '__custom__') {
+            setIsEditingCustom(true);
+            onChange(name, '');
+        } else {
+            setIsEditingCustom(false);
+            onChange(name, selectedValue);
+        }
+    };
+
     return (
         <div>
-            <label htmlFor={name} className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">{label}</label>
+            <label htmlFor={`${name}-select`} className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">{label}</label>
             <div className="mt-2">
-                <input
-                    type="text"
-                    id={name}
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    list={dataListId}
-                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                    placeholder={`Type or select a ${label.toLowerCase()}`}
-                    required={required}
-                />
+                <select
+                    id={`${name}-select`}
+                    value={isEditingCustom ? '__custom__' : value}
+                    onChange={handleChange}
+                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                >
+                    <option value="" disabled>Select a {label.toLowerCase()}...</option>
+                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    <option value="__custom__">Other (specify)</option>
+                </select>
             </div>
-            <datalist id={dataListId}>
-                {options.map(opt => <option key={opt} value={opt} />)}
-            </datalist>
+            {isEditingCustom && (
+                <div className="mt-2">
+                    <label htmlFor={name} className="sr-only">Custom {label}</label>
+                    <input
+                        type="text"
+                        id={name}
+                        name={name}
+                        value={value}
+                        onChange={(e) => onChange(name, e.target.value)}
+                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                        placeholder={`Enter custom ${label.toLowerCase()}`}
+                        required={required}
+                        autoFocus
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -53,14 +89,11 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     salesPrice: 0,
     advance: 0,
     isArchived: false,
+    fingerprintDate: '',
   });
   
-  const [isCustomWorkType, setIsCustomWorkType] = useState(false);
-
   useEffect(() => {
     if (item) {
-      const isCustom = !workTypeOptions.includes(item.workOfType) && item.workOfType !== '';
-      setIsCustomWorkType(isCustom);
       setFormData({
         id: item.id,
         dateOfWork: item.dateOfWork.split('T')[0],
@@ -74,15 +107,15 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
         salesPrice: item.salesPrice || 0,
         advance: item.advance || 0,
         isArchived: item.isArchived || false,
+        fingerprintDate: item.fingerprintDate || '',
       });
     } else {
-       setIsCustomWorkType(false);
        setFormData({
            id: undefined,
            dateOfWork: new Date().toISOString().split('T')[0],
            workBy: '',
            workOfType: '',
-           status: statusOptions[0] || '',
+           status: statusOptions.includes('UNDER PROCESSING') ? 'UNDER PROCESSING' : statusOptions[0] || '',
            customerName: '',
            passportNumber: '',
            trackingNumber: '',
@@ -90,6 +123,7 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
            salesPrice: 0,
            advance: 0,
            isArchived: false,
+           fingerprintDate: '',
        });
     }
   }, [item, workTypeOptions, statusOptions]);
@@ -99,28 +133,47 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleWorkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const { value } = e.target;
-      if (value === '__custom__') {
-          setIsCustomWorkType(true);
-          setFormData(prev => ({ ...prev, workOfType: '' }));
-      } else {
-          setIsCustomWorkType(false);
-          setFormData(prev => ({ ...prev, workOfType: value }));
-      }
+  const handleCustomSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({...prev, [name]: value}));
   };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Required fields check
+    if (!formData.customerName.trim()) {
+        alert('Customer Name is a required field.');
+        return;
+    }
+    if (!formData.trackingNumber.trim()) {
+        alert('Tracking Number is a required field.');
+        return;
+    }
+    if (!formData.mobileWhatsappNumber.trim()) {
+        alert('Mobile/WhatsApp Number is a required field.');
+        return;
+    }
     if (!formData.workOfType) {
         alert('Work Type is a required field.');
         return;
+    }
+     if (!formData.workBy) {
+        alert('Work By is a required field.');
+        return;
+    }
+    
+    // Soft reminder for sales price
+    if (!formData.salesPrice || Number(formData.salesPrice) === 0) {
+        if (!window.confirm("Sales Price is zero. Do you want to continue?")) {
+            return;
+        }
     }
     
     onSave(formData);
   };
 
   const due = (Number(formData.salesPrice) || 0) - (Number(formData.advance) || 0);
+  const showFingerprintDate = formData.status === 'WAITING FOR FINGERPRINT';
 
   return (
     <div className="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -146,51 +199,30 @@ const WorkItemForm: React.FC<WorkItemFormProps> = ({ item, onSave, onClose, work
                                             value={formData.dateOfWork}
                                             onChange={(date) => setFormData(prev => ({ ...prev, dateOfWork: date }))}
                                         />
-                                        <DatalistInput label="Work By" name="workBy" value={formData.workBy} onChange={handleChange} options={workByOptions} />
+                                        <CustomSelect label="Work By" name="workBy" value={formData.workBy} onChange={handleCustomSelectChange} options={workByOptions} required />
                                         
-                                        <div>
-                                            <label htmlFor="workOfTypeSelect" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Work Type</label>
-                                            <div className="mt-2">
-                                                <select
-                                                    id="workOfTypeSelect"
-                                                    value={isCustomWorkType ? '__custom__' : formData.workOfType}
-                                                    onChange={handleWorkTypeChange}
-                                                    className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                                                >
-                                                    <option value="" disabled>Select a type...</option>
-                                                    {workTypeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                    <option value="__custom__">Other (specify)</option>
-                                                </select>
-                                            </div>
-                                            {isCustomWorkType && (
-                                                <div className="mt-2">
-                                                    <label htmlFor="workOfType" className="sr-only">Custom Work Type</label>
-                                                    <input
-                                                        type="text"
-                                                        id="workOfType"
-                                                        name="workOfType"
-                                                        value={formData.workOfType}
-                                                        onChange={handleChange}
-                                                        className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                                                        placeholder="Enter custom work type"
-                                                        required
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
+                                        <CustomSelect label="Work Type" name="workOfType" value={formData.workOfType} onChange={handleCustomSelectChange} options={workTypeOptions} required />
+                                        
+                                        <CustomSelect label="Status" name="status" value={formData.status} onChange={handleCustomSelectChange} options={statusOptions} required />
+                                        
+                                        {showFingerprintDate && (
+                                            <DatePicker
+                                                label="Fingerprint Date"
+                                                value={formData.fingerprintDate}
+                                                onChange={(date) => setFormData(prev => ({...prev, fingerprintDate: date}))}
+                                            />
+                                        )}
 
-                                        <DatalistInput label="Status" name="status" value={formData.status} onChange={handleChange} options={statusOptions} required />
-                                        
                                         <div className="md:col-span-2">
                                             <label htmlFor="customerName" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Customer Name</label>
                                             <div className="mt-2">
-                                                <input id="customerName" type="text" name="customerName" placeholder="e.g. John Doe" value={formData.customerName} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" required />
+                                                <input id="customerName" type="text" name="customerName" placeholder="e.g. John Doe" value={formData.customerName} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
                                             </div>
                                         </div>
                                         <div>
-                                            <label htmlFor="passportNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">Passport Number</label>
+                                            <label htmlFor="passportNumber" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-300">PASSPORT OR ID NO</label>
                                             <div className="mt-2">
-                                                <input id="passportNumber" type="text" name="passportNumber" placeholder="Passport Number" value={formData.passportNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
+                                                <input id="passportNumber" type="text" name="passportNumber" placeholder="Passport or ID No." value={formData.passportNumber} onChange={handleChange} className="block w-full rounded-md border-0 bg-white dark:bg-slate-900 py-1.5 text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-indigo-500 sm:text-sm sm:leading-6" />
                                             </div>
                                         </div>
                                         <div>

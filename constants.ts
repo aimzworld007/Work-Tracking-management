@@ -1,3 +1,4 @@
+
 import { WorkItem } from './types';
 
 export const WORK_TYPE_OPTIONS = [
@@ -23,6 +24,7 @@ export const INITIAL_STATUS_OPTIONS: string[] = [
   'Approved',
   'Rejected',
   'Waiting Delivery',
+  'WAITING FOR FINGERPRINT',
   'PAID ONLY',
   'PENDING',
   'Deliverd',

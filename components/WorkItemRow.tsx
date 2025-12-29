@@ -321,7 +321,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 space-y-1">
             {item.passportNumber && (
                 <div>
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">Passport:</span> {item.passportNumber}
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">Passport/ID:</span> {item.passportNumber}
                 </div>
             )}
             {item.mobileWhatsappNumber && (

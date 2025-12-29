@@ -1,3 +1,4 @@
+
 // Defines the possible statuses for a work item.
 export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | 'PAID ONLY' | 'PENDING' | string;
 
@@ -20,6 +21,7 @@ export interface WorkItem {
   isTrashed: boolean;
   trashedAt?: string;
   customerCalled?: boolean;
+  fingerprintDate?: string; // New field for fingerprint appointments
 }
 
 // Defines the structure of a reminder item.

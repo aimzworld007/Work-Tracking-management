@@ -189,6 +189,7 @@ const App: React.FC = () => {
             due: data.due ?? (data.salesPrice || 0) - (data.advance || 0),
             dayCount: calculateDayCount(data.dateOfWork),
             customerCalled: data.customerCalled || false,
+            fingerprintDate: data.fingerprintDate,
           });
         });
         setWorkItems(items);
@@ -399,16 +400,19 @@ const App: React.FC = () => {
 
     try {
       let savedDocId: string | undefined = itemToSave.id;
+      const batch = db.batch();
 
       if (dataToSave.id) {
         const { id, ...dataToUpdate } = dataToSave;
-        await db.collection("work-items").doc(id).update(dataToUpdate);
+        const docRef = db.collection("work-items").doc(id);
+        batch.update(docRef, dataToUpdate);
       } else {
         const selectedDate = new Date(`${dataToSave.dateOfWork}T00:00:00`);
         const now = new Date();
         selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
         const { id, ...finalData } = dataToSave;
-        const docRef = await db.collection("work-items").add({ 
+        const docRef = db.collection("work-items").doc();
+        batch.set(docRef, { 
           ...finalData,
           dateOfWork: selectedDate.toISOString(),
           isArchived: finalData.isArchived || false,
@@ -418,6 +422,21 @@ const App: React.FC = () => {
         savedDocId = docRef.id;
       }
       
+      // Automatically create a reminder for fingerprint date
+      if (itemToSave.status === 'WAITING FOR FINGERPRINT' && itemToSave.fingerprintDate && savedDocId) {
+          const reminderRef = db.collection("reminders").doc();
+          batch.set(reminderRef, {
+              title: `Fingerprint appointment for ${itemToSave.customerName}`,
+              note: `Work Type: ${itemToSave.workOfType}`,
+              reminderDate: itemToSave.fingerprintDate,
+              isCompleted: false,
+              createdAt: new Date().toISOString(),
+              workItemId: savedDocId,
+          });
+      }
+
+      await batch.commit();
+
       if (itemToSave.workOfType) {
         const optionsDocRef = db.collection('options').doc('appData');
         if (!workTypeOptions.includes(itemToSave.workOfType)) {
