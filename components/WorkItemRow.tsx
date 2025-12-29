@@ -267,7 +267,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         <div className="text-xs text-slate-500 dark:text-slate-400">{getTimeAgo(item.dateOfWork, item.dayCount)}</div>
       </td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workBy}</td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workOfType}</td>
+      <td className={`whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top ${item.customerCalled ? 'line-through' : ''}`}>{item.workOfType}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         {isEditingStatus && !item.isTrashed ? (
           <select
@@ -303,7 +303,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         )}
       </td>
       <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
-        <div className="font-medium text-slate-900 dark:text-slate-100">{item.customerName}</div>
+        <div className={`font-medium text-slate-900 dark:text-slate-100 ${item.customerCalled ? 'line-through' : ''}`}>{item.customerName}</div>
         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 space-y-1">
             {item.passportNumber && (
                 <div>
