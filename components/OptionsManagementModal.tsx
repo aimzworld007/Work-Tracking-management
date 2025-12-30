@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { CloseIcon, EditIcon, DeleteIcon, CheckIcon, AddIcon } from './icons';
-import { WorkTypeConfig } from '../types';
+import { WorkTypeConfig, toTitleCase } from '../types';
 
 interface OptionsManagementModalProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ const OptionsList: React.FC<{
 
     const handleSaveEdit = () => {
         if (editingOption && editingValue.trim()) {
-            const newValue = isWorkType ? { name: editingValue.trim(), trackingUrl: editingUrl.trim() } : editingValue.trim();
+            const newValue = isWorkType ? { name: toTitleCase(editingValue.trim()), trackingUrl: editingUrl.trim() } : toTitleCase(editingValue.trim());
             onEdit(editingOption, newValue);
         }
         setEditingOption(null);
@@ -58,7 +58,7 @@ const OptionsList: React.FC<{
     const handleAddNew = (e: React.FormEvent) => {
         e.preventDefault();
         if (newItemValue.trim()) {
-            const newValue = isWorkType ? { name: newItemValue.trim(), trackingUrl: newItemUrl.trim() } : newItemValue.trim();
+            const newValue = isWorkType ? { name: toTitleCase(newItemValue.trim()), trackingUrl: newItemUrl.trim() } : toTitleCase(newItemValue.trim());
             onAdd(newValue);
             setNewItemValue('');
             setNewItemUrl('');

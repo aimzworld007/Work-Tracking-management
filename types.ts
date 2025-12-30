@@ -2,6 +2,20 @@
 // Defines the possible statuses for a work item.
 export type Status = 'UNDER PROCESSING' | 'Approved' | 'Rejected' | 'Waiting Delivery' | 'PAID ONLY' | 'PENDING' | string;
 
+// Utility function to convert a string to Title Case, preserving acronyms.
+export const toTitleCase = (str: string): string => {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => {
+      if (word.length > 1 && word === word.toUpperCase()) {
+        return word; // Preserve acronyms like 'PP' or 'ID'
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
+
 // Defines the structure of a work item.
 export interface WorkItem {
   id?: string; // ID is now optional and will be a string from Firestore

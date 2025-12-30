@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { WorkItem, Reminder, WorkTypeConfig } from './types';
+import { WorkItem, Reminder, WorkTypeConfig, toTitleCase } from './types';
 import WorkItemRow from './components/WorkItemRow';
 import WorkItemForm from './components/WorkItemForm';
 import ReminderForm from './components/ReminderForm';
@@ -23,15 +23,15 @@ import WhatsAppModal from './components/WhatsAppModal';
 import OptionsManagementModal from './components/OptionsManagementModal';
 
 
-const TABS = ['All Items', 'UNDER PROCESSING', 'Approved', 'Rejected', 'Waiting Delivery', 'PAID ONLY', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
+const TABS = ['All Items', 'Under Processing', 'Approved', 'Rejected', 'Waiting Delivery', 'Paid Only', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
 
 const TAB_COLORS: { [key: string]: { base: string; active: string; badge: string } } = {
   'All Items':        { base: 'bg-slate-500 hover:bg-slate-600', active: 'bg-slate-700 ring-slate-500', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
-  'UNDER PROCESSING': { base: 'bg-blue-500 hover:bg-blue-600',   active: 'bg-blue-700 ring-blue-500',   badge: 'bg-blue-200 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' },
+  'Under Processing': { base: 'bg-blue-500 hover:bg-blue-600',   active: 'bg-blue-700 ring-blue-500',   badge: 'bg-blue-200 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' },
   'Approved':         { base: 'bg-green-500 hover:bg-green-600', active: 'bg-green-700 ring-green-500', badge: 'bg-green-200 text-green-800 dark:bg-green-900/50 dark:text-green-200' },
   'Rejected':         { base: 'bg-red-500 hover:bg-red-600',     active: 'bg-red-700 ring-red-500',     badge: 'bg-red-200 text-red-800 dark:bg-red-900/50 dark:text-red-200' },
   'Waiting Delivery': { base: 'bg-purple-500 hover:bg-purple-600',active: 'bg-purple-700 ring-purple-500',badge: 'bg-purple-200 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200' },
-  'PAID ONLY':        { base: 'bg-cyan-500 hover:bg-cyan-600',   active: 'bg-cyan-700 ring-cyan-500',   badge: 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200' },
+  'Paid Only':        { base: 'bg-cyan-500 hover:bg-cyan-600',   active: 'bg-cyan-700 ring-cyan-500',   badge: 'bg-cyan-200 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200' },
   'Deliverd':         { base: 'bg-emerald-500 hover:bg-emerald-600', active: 'bg-emerald-700 ring-emerald-500', badge: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' },
   'Reminders':        { base: 'bg-amber-500 hover:bg-amber-600', active: 'bg-amber-700 ring-amber-500', badge: 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' },
   'Archived':         { base: 'bg-gray-500 hover:bg-gray-600',  active: 'bg-gray-700 ring-gray-500',   badge: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' },
@@ -248,20 +248,20 @@ const App: React.FC = () => {
             if (data.workTypes && data.workTypes.length > 0) {
                 // Backwards compatibility: check if it's the old string array format
                 if (typeof data.workTypes[0] === 'string') {
-                    const migratedWorkTypes = data.workTypes.map((name: string) => ({ name, trackingUrl: INITIAL_WORK_TYPE_CONFIGS.find(c => c.name === name)?.trackingUrl || '' }));
+                    const migratedWorkTypes = data.workTypes.map((name: string) => ({ name: toTitleCase(name), trackingUrl: INITIAL_WORK_TYPE_CONFIGS.find(c => c.name.toLowerCase() === name.toLowerCase())?.trackingUrl || '' }));
                     setWorkTypeOptions(migratedWorkTypes);
                     // Update Firestore with the new format
                     optionsDocRef.update({ workTypes: migratedWorkTypes });
                 } else {
-                    setWorkTypeOptions(data.workTypes);
+                    setWorkTypeOptions(data.workTypes.map(wt => ({...wt, name: toTitleCase(wt.name)})));
                 }
             } else {
                 setWorkTypeOptions(INITIAL_WORK_TYPE_CONFIGS);
             }
             
             // Handle Statuses and Work By (still string arrays)
-            setStatusOptions([...new Set([...INITIAL_STATUS_OPTIONS, ...(data.statuses || [])])]);
-            setWorkByOptions([...new Set([...INITIAL_WORK_BY_OPTIONS, ...(data.workBy || [])])].sort());
+            setStatusOptions([...new Set([...INITIAL_STATUS_OPTIONS, ...(data.statuses || [])])].map(toTitleCase));
+            setWorkByOptions([...new Set([...INITIAL_WORK_BY_OPTIONS, ...(data.workBy || [])])].map(toTitleCase).sort());
         }
       } else {
         console.log("Options document does not exist, creating it with default values.");
@@ -408,7 +408,11 @@ const App: React.FC = () => {
         ...itemToSave, 
         salesPrice,
         advance,
-        due 
+        due,
+        customerName: toTitleCase(itemToSave.customerName || ''),
+        workBy: toTitleCase(itemToSave.workBy || ''),
+        workOfType: toTitleCase(itemToSave.workOfType || ''),
+        status: toTitleCase(itemToSave.status || ''),
     };
     
     const originalStatus = itemToSave.id ? workItems.find(w => w.id === itemToSave.id)?.status : null;
@@ -438,11 +442,11 @@ const App: React.FC = () => {
       }
       
       // Automatically create a reminder for fingerprint date
-      if (itemToSave.status === 'WAITING FOR FINGERPRINT' && itemToSave.fingerprintDate && savedDocId) {
+      if (itemToSave.status === 'Waiting For Fingerprint' && itemToSave.fingerprintDate && savedDocId) {
           const reminderRef = db.collection("reminders").doc();
           batch.set(reminderRef, {
-              title: `Fingerprint appointment for ${itemToSave.customerName}`,
-              note: `Work Type: ${itemToSave.workOfType}`,
+              title: `Fingerprint appointment for ${dataToSave.customerName}`,
+              note: `Work Type: ${dataToSave.workOfType}`,
               reminderDate: itemToSave.fingerprintDate,
               isCompleted: false,
               createdAt: new Date().toISOString(),
@@ -452,16 +456,16 @@ const App: React.FC = () => {
 
       await batch.commit();
 
-      if (itemToSave.workOfType) {
+      if (dataToSave.workOfType) {
         const optionsDocRef = db.collection('options').doc('appData');
-        if (!workTypeOptions.some(opt => opt.name === itemToSave.workOfType)) {
-            await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion({ name: itemToSave.workOfType, trackingUrl: '' }) });
+        if (!workTypeOptions.some(opt => opt.name.toLowerCase() === dataToSave.workOfType?.toLowerCase())) {
+            await optionsDocRef.update({ workTypes: firebase.firestore.FieldValue.arrayUnion({ name: dataToSave.workOfType, trackingUrl: '' }) });
         }
-        if (itemToSave.status && !statusOptions.includes(itemToSave.status)) {
-            await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(itemToSave.status) });
+        if (dataToSave.status && !statusOptions.some(opt => opt.toLowerCase() === dataToSave.status?.toLowerCase())) {
+            await optionsDocRef.update({ statuses: firebase.firestore.FieldValue.arrayUnion(dataToSave.status) });
         }
-        if (itemToSave.workBy && !workByOptions.includes(itemToSave.workBy)) {
-            await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(itemToSave.workBy) });
+        if (dataToSave.workBy && !workByOptions.some(opt => opt.toLowerCase() === dataToSave.workBy?.toLowerCase())) {
+            await optionsDocRef.update({ workBy: firebase.firestore.FieldValue.arrayUnion(dataToSave.workBy) });
         }
       }
 
@@ -469,12 +473,11 @@ const App: React.FC = () => {
 
       if (dataToSave.status === 'Approved' && originalStatus !== 'Approved') {
         const itemForWhatsApp = {
-            ...itemToSave,
+            ...dataToSave,
             id: savedDocId,
             dayCount: 0,
             isArchived: dataToSave.isArchived,
             isTrashed: false,
-            due: dataToSave.due,
         } as WorkItem;
         
         if (itemForWhatsApp.mobileWhatsappNumber) {
@@ -560,10 +563,10 @@ const App: React.FC = () => {
 
       const item = {
         dateOfWork,
-        workBy,
-        workOfType,
-        status,
-        customerName,
+        workBy: toTitleCase(workBy),
+        workOfType: toTitleCase(workOfType),
+        status: toTitleCase(status),
+        customerName: toTitleCase(customerName),
         trackingNumber,
         passportNumber: '',
         mobileWhatsappNumber: customerNumber,
@@ -573,9 +576,9 @@ const App: React.FC = () => {
       };
       itemsToSave.push(item);
 
-      if (item.workOfType && !workTypeOptions.some(wt => wt.name === item.workOfType)) newWorkTypes.add(item.workOfType);
-      if (item.status && !statusOptions.includes(item.status)) newStatuses.add(item.status);
-      if (item.workBy && !workByOptions.includes(item.workBy)) newWorkBy.add(item.workBy);
+      if (item.workOfType && !workTypeOptions.some(wt => wt.name.toLowerCase() === item.workOfType.toLowerCase())) newWorkTypes.add(item.workOfType);
+      if (item.status && !statusOptions.some(s => s.toLowerCase() === item.status.toLowerCase())) newStatuses.add(item.status);
+      if (item.workBy && !workByOptions.some(wb => wb.toLowerCase() === item.workBy.toLowerCase())) newWorkBy.add(item.workBy);
     }
 
     if (itemsToSave.length === 0) {
@@ -594,14 +597,14 @@ const App: React.FC = () => {
       const optionsDocRef = db.collection('options').doc('appData');
       const updates: { [key: string]: any } = {};
       if (newWorkTypes.size > 0) {
-        const newWorkTypeObjects = Array.from(newWorkTypes).map(name => ({ name, trackingUrl: '' }));
+        const newWorkTypeObjects = Array.from(newWorkTypes).map(name => ({ name: toTitleCase(name), trackingUrl: '' }));
         updates.workTypes = firebase.firestore.FieldValue.arrayUnion(...newWorkTypeObjects);
       }
       if (newStatuses.size > 0) {
-        updates.statuses = firebase.firestore.FieldValue.arrayUnion(...Array.from(newStatuses));
+        updates.statuses = firebase.firestore.FieldValue.arrayUnion(...Array.from(newStatuses).map(toTitleCase));
       }
       if (newWorkBy.size > 0) {
-        updates.workBy = firebase.firestore.FieldValue.arrayUnion(...Array.from(newWorkBy));
+        updates.workBy = firebase.firestore.FieldValue.arrayUnion(...Array.from(newWorkBy).map(toTitleCase));
       }
       if (Object.keys(updates).length > 0) {
         await optionsDocRef.update(updates);
@@ -676,10 +679,10 @@ const App: React.FC = () => {
 
     try {
       const docRef = db.collection("work-items").doc(id);
-      const updates: { status: string; isArchived?: boolean } = { status };
+      const updates: { status: string; isArchived?: boolean } = { status: toTitleCase(status) };
       await docRef.update(updates);
 
-      if (status === 'Approved') {
+      if (status.toLowerCase() === 'approved') {
           if (item.mobileWhatsappNumber) {
               const updatedItem = { ...item, status: 'Approved', isArchived: item.isArchived };
               setWhatsAppItem(updatedItem);
@@ -767,13 +770,15 @@ const App: React.FC = () => {
         return;
     };
 
-    const dataToUpdate: { status?: string; workBy?: string } = { ...data };
+    const dataToUpdate: { status?: string; workBy?: string } = {};
+    if(data.status) dataToUpdate.status = toTitleCase(data.status);
+    if(data.workBy) dataToUpdate.workBy = toTitleCase(data.workBy);
     
     try {
         const batch = db.batch();
         selectedItems.forEach(id => {
             const docRef = db.collection("work-items").doc(id);
-            batch.update(docRef, dataToUpdate);
+            batch.update(dataToUpdate);
         });
         await batch.commit();
         setSelectedItems([]);
@@ -918,8 +923,11 @@ const App: React.FC = () => {
   const handleAddOption = async (field: 'workTypes' | 'statuses' | 'workBy', value: string | WorkTypeConfig) => {
     if ((typeof value === 'string' && !value.trim()) || (typeof value === 'object' && !value.name.trim())) return;
     try {
+      const valueToSave = typeof value === 'string' 
+        ? toTitleCase(value) 
+        : { ...value, name: toTitleCase(value.name) };
       await optionsDocRef.update({
-        [field]: firebase.firestore.FieldValue.arrayUnion(value)
+        [field]: firebase.firestore.FieldValue.arrayUnion(valueToSave)
       });
     } catch (error) {
       console.error(`Error adding ${field}: `, error);
@@ -929,17 +937,18 @@ const App: React.FC = () => {
 
   const handleDeleteOption = async (field: 'workTypes' | 'statuses', value: string) => {
     const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+    const casedValue = toTitleCase(value);
 
     try {
-      const usageQuery = await db.collection('work-items').where(collectionField, '==', value).limit(1).get();
+      const usageQuery = await db.collection('work-items').where(collectionField, '==', casedValue).limit(1).get();
       if (!usageQuery.empty) {
-        alert(`Cannot delete "${value}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
+        alert(`Cannot delete "${casedValue}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
         return;
       }
 
-      if (window.confirm(`Are you sure you want to permanently delete "${value}"? This action cannot be undone.`)) {
+      if (window.confirm(`Are you sure you want to permanently delete "${casedValue}"? This action cannot be undone.`)) {
         const currentOptions = field === 'workTypes' ? workTypeOptions : statusOptions;
-        const updatedOptions = currentOptions.filter(opt => (typeof opt === 'string' ? opt : opt.name) !== value);
+        const updatedOptions = currentOptions.filter(opt => (typeof opt === 'string' ? opt : opt.name) !== casedValue);
         await optionsDocRef.update({ [field]: updatedOptions });
       }
     } catch (error) {
@@ -949,12 +958,13 @@ const App: React.FC = () => {
   };
 
   const handleEditOption = async (field: 'workTypes' | 'statuses', oldValue: string, newValue: string | WorkTypeConfig) => {
-    const newValueName = typeof newValue === 'string' ? newValue.trim() : newValue.name.trim();
-    if (!newValueName || oldValue === newValueName) return;
+    const newValueName = typeof newValue === 'string' ? toTitleCase(newValue.trim()) : toTitleCase(newValue.name.trim());
+    const casedOldValue = toTitleCase(oldValue);
+    if (!newValueName || casedOldValue === newValueName) return;
 
     const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
     const currentOptions = field === 'workTypes' ? workTypeOptions : statusOptions;
-    const optionExists = currentOptions.some(opt => (typeof opt === 'string' ? opt : opt.name) === newValueName);
+    const optionExists = currentOptions.some(opt => (typeof opt === 'string' ? opt : opt.name).toLowerCase() === newValueName.toLowerCase());
 
     if (optionExists) {
         alert(`The option "${newValueName}" already exists.`);
@@ -962,14 +972,16 @@ const App: React.FC = () => {
     }
 
     try {
+        const finalNewValue = typeof newValue === 'string' ? newValueName : {...newValue, name: newValueName};
+
         const updatedOptions = currentOptions.map(opt => {
             const optName = typeof opt === 'string' ? opt : opt.name;
-            return optName === oldValue ? newValue : opt;
+            return optName === casedOldValue ? finalNewValue : opt;
         });
         await optionsDocRef.update({ [field]: updatedOptions });
 
         const batch = db.batch();
-        const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', oldValue).get();
+        const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', casedOldValue).get();
         
         if (!itemsToUpdateQuery.empty) {
             itemsToUpdateQuery.forEach(doc => {

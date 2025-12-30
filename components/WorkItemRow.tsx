@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { WorkItem, Reminder } from '../types';
+import { WorkItem, Reminder, toTitleCase } from '../types';
 import StatusBadge from './StatusBadge';
 import { EditIcon, DeleteIcon, ArchiveIcon, UnarchiveIcon, ExternalLinkIcon, WhatsAppIcon, CopyIcon, CheckIcon, BellIcon, DeleteForeverIcon } from './icons';
 
@@ -208,8 +208,8 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
     if (!cleanedNumber) return null;
 
     const formattedDate = formatDate(item.dateOfWork);
-    let message = `dear, ${item.customerName}, on ${formattedDate} your ${item.workOfType} is ${item.status}.`;
-    if (item.status === 'Deliverd') {
+    let message = `dear, ${toTitleCase(item.customerName)}, on ${formattedDate} your ${toTitleCase(item.workOfType)} is ${toTitleCase(item.status)}.`;
+    if (item.status.toLowerCase() === 'deliverd') {
         message += " please collect it from our office";
     }
     const encodedMessage = encodeURIComponent(message);
@@ -266,8 +266,8 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         <div className="font-medium">{formatDate(item.dateOfWork)}</div>
         <div className="text-xs text-slate-500 dark:text-slate-400">{getTimeAgo(item.dateOfWork, item.dayCount)}</div>
       </td>
-      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{item.workBy}</td>
-      <td className={`whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top ${item.customerCalled ? 'line-through' : ''}`}>{item.workOfType}</td>
+      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">{toTitleCase(item.workBy)}</td>
+      <td className={`whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top ${item.customerCalled ? 'line-through' : ''}`}>{toTitleCase(item.workOfType)}</td>
       <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
         {isEditingStatus && !item.isTrashed ? (
           <select
@@ -303,7 +303,7 @@ const WorkItemRow: React.FC<WorkItemRowProps> = ({ serialNumber, item, reminders
         )}
       </td>
       <td className="px-3 py-4 text-sm text-slate-600 dark:text-slate-400 align-top">
-        <div className={`font-medium text-slate-900 dark:text-slate-100 ${item.customerCalled ? 'line-through' : ''}`}>{item.customerName}</div>
+        <div className={`font-medium text-slate-900 dark:text-slate-100 ${item.customerCalled ? 'line-through' : ''}`}>{toTitleCase(item.customerName)}</div>
         <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 space-y-1">
             {item.passportNumber && (
                 <div>

@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Status } from '../types';
+import { Status, toTitleCase } from '../types';
 
 interface StatusBadgeProps {
   status: Status;
@@ -39,6 +40,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
         return 'bg-cyan-100 text-cyan-700 ring-cyan-600/20 dark:bg-cyan-900/50 dark:text-cyan-300 dark:ring-cyan-500/20';
       case 'deliverd':
         return 'bg-emerald-100 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/50 dark:text-emerald-300 dark:ring-emerald-500/20';
+      case 'waiting for fingerprint':
+        return 'bg-yellow-100 text-yellow-800 ring-yellow-600/20 dark:bg-yellow-900/50 dark:text-yellow-300 dark:ring-yellow-500/20';
       default:
         const hash = stringToHash(status);
         return COLORS[hash % COLORS.length];
@@ -47,7 +50,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
   return (
     <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusStyles()}`}>
-      {status}
+      {toTitleCase(status)}
     </span>
   );
 };
