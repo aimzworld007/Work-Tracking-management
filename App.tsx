@@ -794,18 +794,26 @@ const App: React.FC = () => {
     const item = workItems.find(w => w.id === id);
     if (!item || item.status === status) return;
 
+    const casedStatus = toTitleCase(status);
+
+    if (casedStatus === 'Waiting For Fingerprint') {
+        const itemWithNewStatus = { ...item, status: casedStatus };
+        handleOpenModal(itemWithNewStatus);
+        return;
+    }
+
     try {
       const docRef = db.collection("work-items").doc(id);
-      const updates: { status: string; isArchived?: boolean } = { status: toTitleCase(status) };
+      const updates: { status: string; isArchived?: boolean } = { status: casedStatus };
       await docRef.update(updates);
 
-      const updatedItem = { ...item, status: toTitleCase(status) };
+      const updatedItem = { ...item, status: casedStatus };
 
-      if (status.toLowerCase() === 'approved') {
+      if (casedStatus.toLowerCase() === 'approved') {
           if (item.mobileWhatsappNumber) {
               setWhatsAppItem(updatedItem);
           }
-      } else if (status.toLowerCase() === 'deliverd') {
+      } else if (casedStatus.toLowerCase() === 'deliverd') {
           setDeliverdItem(updatedItem);
       }
     } catch (error) {
