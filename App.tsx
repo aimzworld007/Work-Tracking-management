@@ -21,6 +21,7 @@ import Login from './components/Login';
 import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
 import WhatsAppModal from './components/WhatsAppModal';
 import OptionsManagementModal from './components/OptionsManagementModal';
+import StatusReassignModal from './components/StatusReassignModal';
 
 
 const TABS = ['All Items', 'Under Processing', 'Approved', 'Rejected', 'Waiting Delivery', 'Paid Only', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
@@ -113,6 +114,8 @@ const App: React.FC = () => {
   });
 
   const [whatsAppItem, setWhatsAppItem] = useState<WorkItem | null>(null);
+  const [reassignState, setReassignState] = useState<{ itemToDelete: string; field: 'statuses' | 'workTypes' } | null>(null);
+
 
   useEffect(() => {
     localStorage.setItem('marqueeSpeed', marqueeSpeed);
@@ -921,11 +924,21 @@ const App: React.FC = () => {
   const optionsDocRef = db.collection('options').doc('appData');
 
   const handleAddOption = async (field: 'workTypes' | 'statuses' | 'workBy', value: string | WorkTypeConfig) => {
-    if ((typeof value === 'string' && !value.trim()) || (typeof value === 'object' && !value.name.trim())) return;
+    const nameToAdd = typeof value === 'string' ? toTitleCase(value.trim()) : toTitleCase(value.name.trim());
+    if (!nameToAdd) return;
+
+    const currentOptions = field === 'workTypes' ? workTypeOptions.map(o => o.name) : (field === 'statuses' ? statusOptions : workByOptions);
+    const optionExists = currentOptions.some(opt => opt.toLowerCase() === nameToAdd.toLowerCase());
+    
+    if (optionExists) {
+        alert(`The option "${nameToAdd}" already exists.`);
+        return;
+    }
+
     try {
       const valueToSave = typeof value === 'string' 
-        ? toTitleCase(value) 
-        : { ...value, name: toTitleCase(value.name) };
+        ? nameToAdd
+        : { ...value, name: nameToAdd };
       await optionsDocRef.update({
         [field]: firebase.firestore.FieldValue.arrayUnion(valueToSave)
       });
@@ -942,7 +955,7 @@ const App: React.FC = () => {
     try {
       const usageQuery = await db.collection('work-items').where(collectionField, '==', casedValue).limit(1).get();
       if (!usageQuery.empty) {
-        alert(`Cannot delete "${casedValue}" because it is currently in use by at least one work item. Please reassign items before deleting.`);
+        setReassignState({ itemToDelete: casedValue, field });
         return;
       }
 
@@ -954,6 +967,29 @@ const App: React.FC = () => {
     } catch (error) {
       console.error(`Error deleting ${field}: `, error);
       alert(`Failed to delete option. See console for details.`);
+    }
+  };
+  
+  const handleReassignAndDelete = async (oldValue: string, newValue: string, field: 'workTypes' | 'statuses') => {
+    const collectionField = field === 'workTypes' ? 'workOfType' : 'status';
+    
+    try {
+        const batch = db.batch();
+        const itemsToUpdateQuery = await db.collection('work-items').where(collectionField, '==', oldValue).get();
+        
+        itemsToUpdateQuery.forEach(doc => {
+            batch.update(doc.ref, { [collectionField]: newValue });
+        });
+        await batch.commit();
+
+        const currentOptions = field === 'workTypes' ? workTypeOptions : statusOptions;
+        const updatedOptions = currentOptions.filter(opt => (typeof opt === 'string' ? opt : opt.name) !== oldValue);
+        await optionsDocRef.update({ [field]: updatedOptions });
+        
+        setReassignState(null);
+    } catch (error) {
+        console.error(`Error reassigning and deleting ${field}: `, error);
+        alert(`Failed to process deletion. See console for details.`);
     }
   };
 
@@ -1245,6 +1281,17 @@ const App: React.FC = () => {
                 onAddStatus={(value) => handleAddOption('statuses', value)}
                 onDeleteStatus={(value) => handleDeleteOption('statuses', value)}
                 onEditStatus={(oldValue, newValue) => handleEditOption('statuses', oldValue, newValue)}
+            />
+        )}
+        
+        {reassignState && (
+            <StatusReassignModal
+                isOpen={!!reassignState}
+                onClose={() => setReassignState(null)}
+                onConfirm={(newStatus) => handleReassignAndDelete(reassignState.itemToDelete, newStatus, reassignState.field)}
+                itemToDelete={reassignState.itemToDelete}
+                options={reassignState.field === 'statuses' ? statusOptions : workTypeOptions.map(o => o.name)}
+                itemType={reassignState.field === 'statuses' ? 'Status' : 'Work Type'}
             />
         )}
 
