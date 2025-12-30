@@ -23,6 +23,7 @@ import WhatsAppModal from './components/WhatsAppModal';
 import OptionsManagementModal from './components/OptionsManagementModal';
 import StatusReassignModal from './components/StatusReassignModal';
 import DeliverdModal from './components/DeliverdModal';
+import StatisticsPanel from './components/StatisticsPanel';
 
 
 const TABS = ['All Items', 'Under Processing', 'Approved', 'Rejected', 'Waiting Delivery', 'Paid Only', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
@@ -117,6 +118,7 @@ const App: React.FC = () => {
   const [whatsAppItem, setWhatsAppItem] = useState<WorkItem | null>(null);
   const [reassignState, setReassignState] = useState<{ itemToDelete: string; field: 'statuses' | 'workTypes' } | null>(null);
   const [deliverdItem, setDeliverdItem] = useState<WorkItem | null>(null);
+  const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false);
 
 
   useEffect(() => {
@@ -1222,10 +1224,19 @@ const App: React.FC = () => {
                         onMarqueeSpeedChange={setMarqueeSpeed}
                         onLogout={handleLogout}
                         onManageOptions={() => setIsOptionsModalOpen(true)}
+                        onToggleStatsPanel={() => setIsStatsPanelOpen(prev => !prev)}
                       />
                   </div>
               </div>
           </div>
+        )}
+
+        {isStatsPanelOpen && (
+            <StatisticsPanel
+                workItems={workItems}
+                reminders={reminders}
+                onClose={() => setIsStatsPanelOpen(false)}
+            />
         )}
 
         <div className="space-y-2 mb-4">

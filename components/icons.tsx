@@ -126,3 +126,19 @@ export const BellIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 export const TagIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l6.472 6.472a2.25 2.25 0 003.182 0l4.318-4.318a2.25 2.25 0 000-3.182L9.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></Icon>
 );
+
+export const ChartBarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></Icon>
+);
+
+export const TrophyIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 1010.5 0h-1.5zM9.75 15.75h4.5m-2.25 0v-4.5m0-4.5a3.375 3.375 0 00-3.375 3.375h6.75A3.375 3.375 0 0012 6.75z" /></Icon>
+);
+
+export const CurrencyDollarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.25a3.75 3.75 0 01-7.5 0V7.5a3.75 3.75 0 017.5 0v3.75zm3-3.75a3.75 3.75 0 00-7.5 0V7.5a3.75 3.75 0 007.5 0v-3.75zm3 2.25a3.75 3.75 0 017.5 0V15a3.75 3.75 0 01-7.5 0v-3.75z" /></Icon>
+);
+
+export const BellAlertIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></Icon>
+);
