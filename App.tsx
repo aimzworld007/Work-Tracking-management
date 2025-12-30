@@ -22,6 +22,7 @@ import { MarqueeSpeed, marqueeSpeeds } from './components/MarqueeSpeedControl';
 import WhatsAppModal from './components/WhatsAppModal';
 import OptionsManagementModal from './components/OptionsManagementModal';
 import StatusReassignModal from './components/StatusReassignModal';
+import DeliverdModal from './components/DeliverdModal';
 
 
 const TABS = ['All Items', 'Under Processing', 'Approved', 'Rejected', 'Waiting Delivery', 'Paid Only', 'Deliverd', 'Reminders', 'Archived', 'Trash'];
@@ -115,6 +116,7 @@ const App: React.FC = () => {
 
   const [whatsAppItem, setWhatsAppItem] = useState<WorkItem | null>(null);
   const [reassignState, setReassignState] = useState<{ itemToDelete: string; field: 'statuses' | 'workTypes' } | null>(null);
+  const [deliverdItem, setDeliverdItem] = useState<WorkItem | null>(null);
 
 
   useEffect(() => {
@@ -239,6 +241,118 @@ const App: React.FC = () => {
     );
     return () => unsubscribe();
   }, [isAuthenticated, firestoreError]);
+
+    // One-time data cleanup for merging duplicate options
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const cleanupKey = 'dataCleanupRun_v2';
+        if (localStorage.getItem(cleanupKey) === 'true') {
+            return;
+        }
+
+        const runCleanup = async () => {
+            console.log("Running one-time data cleanup for duplicate statuses and work types...");
+            const optionsDocRef = db.collection('options').doc('appData');
+            const workItemsRef = db.collection('work-items');
+            
+            try {
+                const optionsDoc = await optionsDocRef.get();
+                if (!optionsDoc.exists) return;
+
+                const data = optionsDoc.data()!;
+                const batch = db.batch();
+                let optionsNeedUpdate = false;
+
+                // 1. Process Statuses
+                const statusMap = new Map<string, string>(); // lowercase -> TitleCase
+                const statusMigrations = new Map<string, string>(); // old value -> new value
+                const allStatuses = [...new Set([...(data.statuses || []), ...INITIAL_STATUS_OPTIONS])];
+
+                allStatuses.forEach(status => {
+                    if(typeof status !== 'string' || !status.trim()) return;
+                    const lower = status.toLowerCase();
+                    const title = toTitleCase(status);
+                    if (!statusMap.has(lower)) {
+                        statusMap.set(lower, title);
+                    }
+                    if (statusMap.get(lower) !== status) {
+                        statusMigrations.set(status, statusMap.get(lower)!);
+                    }
+                });
+
+                const finalStatuses = Array.from(statusMap.values()).sort();
+                if (JSON.stringify(finalStatuses) !== JSON.stringify((data.statuses || []).sort())) {
+                    optionsNeedUpdate = true;
+                }
+
+                if (statusMigrations.size > 0) {
+                    for (const [oldStatus, newStatus] of statusMigrations.entries()) {
+                        const querySnapshot = await workItemsRef.where('status', '==', oldStatus).get();
+                        if (!querySnapshot.empty) {
+                            console.log(`Migrating ${querySnapshot.size} items from status "${oldStatus}" to "${newStatus}"`);
+                            querySnapshot.forEach(doc => batch.update(doc.ref, { status: newStatus }));
+                        }
+                    }
+                }
+
+                // 2. Process Work Types
+                const workTypeMap = new Map<string, WorkTypeConfig>();
+                const workTypeMigrations = new Map<string, string>();
+                const allWorkTypes = [...(data.workTypes || []), ...INITIAL_WORK_TYPE_CONFIGS].map(wt => 
+                    typeof wt === 'string' ? { name: wt, trackingUrl: '' } : wt
+                ).filter(wt => wt && wt.name && typeof wt.name === 'string' && wt.name.trim());
+
+                allWorkTypes.forEach(wt => {
+                    const lower = wt.name.toLowerCase();
+                    const title = toTitleCase(wt.name);
+                    if (!workTypeMap.has(lower)) {
+                        workTypeMap.set(lower, { name: title, trackingUrl: wt.trackingUrl || '' });
+                    } else {
+                        const existing = workTypeMap.get(lower)!;
+                        if (!existing.trackingUrl && wt.trackingUrl) {
+                            existing.trackingUrl = wt.trackingUrl;
+                            workTypeMap.set(lower, existing);
+                        }
+                    }
+                    if (workTypeMap.get(lower)!.name !== wt.name) {
+                        workTypeMigrations.set(wt.name, workTypeMap.get(lower)!.name);
+                    }
+                });
+
+                const finalWorkTypes = Array.from(workTypeMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+                if (JSON.stringify(finalWorkTypes) !== JSON.stringify((data.workTypes || []).sort((a,b) => (a.name || '').localeCompare(b.name || '')))) {
+                    optionsNeedUpdate = true;
+                }
+                
+                if (workTypeMigrations.size > 0) {
+                    for (const [oldName, newName] of workTypeMigrations.entries()) {
+                        const querySnapshot = await workItemsRef.where('workOfType', '==', oldName).get();
+                        if (!querySnapshot.empty) {
+                            console.log(`Migrating ${querySnapshot.size} items from work type "${oldName}" to "${newName}"`);
+                            querySnapshot.forEach(doc => batch.update(doc.ref, { workOfType: newName }));
+                        }
+                    }
+                }
+
+                // Update options doc if anything changed
+                if (optionsNeedUpdate) {
+                    console.log("Updating options document with cleaned data.");
+                    batch.update(optionsDocRef, { statuses: finalStatuses, workTypes: finalWorkTypes });
+                }
+
+                await batch.commit();
+                console.log("Data cleanup complete.");
+                localStorage.setItem(cleanupKey, 'true');
+
+            } catch (err) {
+                console.error("One-time data cleanup failed:", err);
+            }
+        };
+        
+        runCleanup();
+
+    }, [isAuthenticated]);
   
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -685,11 +799,14 @@ const App: React.FC = () => {
       const updates: { status: string; isArchived?: boolean } = { status: toTitleCase(status) };
       await docRef.update(updates);
 
+      const updatedItem = { ...item, status: toTitleCase(status) };
+
       if (status.toLowerCase() === 'approved') {
           if (item.mobileWhatsappNumber) {
-              const updatedItem = { ...item, status: 'Approved', isArchived: item.isArchived };
               setWhatsAppItem(updatedItem);
           }
+      } else if (status.toLowerCase() === 'deliverd') {
+          setDeliverdItem(updatedItem);
       }
     } catch (error) {
       console.error("Error updating status: ", error);
@@ -1300,6 +1417,14 @@ const App: React.FC = () => {
                 item={whatsAppItem}
                 onClose={() => setWhatsAppItem(null)}
                 onArchive={() => handleArchive(whatsAppItem.id!)}
+            />
+        )}
+
+        {deliverdItem && (
+            <DeliverdModal
+                item={deliverdItem}
+                onClose={() => setDeliverdItem(null)}
+                onArchive={() => handleArchive(deliverdItem.id!)}
             />
         )}
 
